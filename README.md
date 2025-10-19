@@ -1,6 +1,6 @@
 <p align="center">
 
-  <img width="18%" align="center" src="https://github.com/user-attachments/assets/41b2a246-d223-4afd-aa72-b0af61a3260b" alt="logo">
+<img width="18%" align="center" src="https://github.com/user-attachments/assets/41b2a246-d223-4afd-aa72-b0af61a3260b" alt="logo">
 </p>
   <h1 align="center">
   Smile2Unlock
@@ -52,34 +52,22 @@
 
 推荐按照以下步骤使用
 
-1.创建conda环境
+1.创建 conda 环境
 
 ```
-conda create -n Smile2Unlock
+conda create -n Smile2Unlock python=3.11.9 -y
 ```
 
-2.安装 cmake（可能不需要指定镜像）
+2.通过 conda 安装 dlib
 
 ```
-pip install cmake==3.29.3 -i https://pypi.mirrors.ustc.edu.cn/simple/
+conda install dlib=19.24.4 -c conda-forge -y
 ```
 
-3.安装 dlib  推荐使用pip安装轮子文件
+3.通过 pip 安装其他必要库
 
 ```
-https://blog.csdn.net/AI_dataloads/article/details/134063212
-```
-
-4.安装 face_recognition
-
-```
-pip install -i https://pypi.tuna.tsinghua.edu.cn/simple face_recognition
-```
-
-5.安装其他必要库
-
-```
-pip install opencv-contrib-python==4.9.0.80 pynput screeninfo numpy==1.26.4 torch==2.2.2 torchvision==0.17.2 torchaudio==2.2.2 face_recognition -i https://pypi.tuna.tsinghua.edu.cn/simple
+pip install cmake==3.29.3 face_recognition opencv-contrib-python==4.9.0.80 pynput screeninfo numpy==1.26.4 torch==2.2.2 torchvision==0.17.2 torchaudio==2.2.2 
 
 ```
 
@@ -108,7 +96,7 @@ numpy=1.26.4
 ### 3. 尝试启动
 
 如果您仅需运行程序，使用 python smile2unlock_entry.py
-而如果您想生成本地可执行文件，请编辑smile2unlock_entry.bat 文件
+而如果您想生成本地可执行文件，请自行修改smile2unlock_entry.bat 文件
 
  可以直接运行，查看效果
 
@@ -121,7 +109,6 @@ numpy=1.26.4
 值得注意的是 请务必指定bat文件夹路径（在“起始于”中填写文件夹）
 
 <img width="788" height="869" alt="202406102005548" src="https://github.com/user-attachments/assets/2112605c-8d81-4fc5-ba32-aae7b56b3fb5" />
-
 
 完成后，您可以在右侧运行中尝试运行。
 
@@ -181,10 +168,8 @@ Could not locate cudnn_ops_infer64_8.dll. Please make sure it is in your library
 1.generate_db.py
 <img width="458" height="655" alt="202406102023562" src="https://github.com/user-attachments/assets/482650f0-8b26-402c-849a-c199e970a405" />
 
-
 2.smile2unlock_entry.py
 <img width="1571" height="2257" alt="202406102024455" src="https://github.com/user-attachments/assets/cfe6ca65-2ba5-4f6c-acf5-773d4c554767" />
-
 
 ### 参考
 
