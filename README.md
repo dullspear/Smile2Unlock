@@ -41,34 +41,22 @@
 
 推荐按照以下步骤使用
 
-1.创建conda环境
+1.创建 conda 环境
 
 ```
-conda create --name smile2unlock_cp python=3.11.9
+conda create -n Smile2Unlock_cp python=3.11.9 -y
 ```
 
-2.安装 cmake（可能不需要指定镜像）
+2.通过 conda 安装 dlib
 
 ```
-pip install cmake==3.29.3 -i https://pypi.tuna.tsinghua.edu.cn/simple 
+conda install dlib=19.24.4 -c conda-forge -y
 ```
 
-3.安装 dlib  推荐使用pip安装轮子文件
+3.通过 pip 安装其他必要库
 
 ```
-https://blog.csdn.net/AI_dataloads/article/details/134063212
-```
-
-4.安装 face_recognition
-
-```
-pip install -i https://pypi.tuna.tsinghua.edu.cn/simple face_recognition
-```
-
-5.安装其他必要库
-
-```
-pip install opencv-contrib-python==4.9.0.80 pynput screeninfo numpy==1.26.4 torch==2.2.2 torchvision==0.17.2 torchaudio==2.2.2 face_recognition -i https://pypi.tuna.tsinghua.edu.cn/simple
+pip install cmake==3.29.3 face_recognition opencv-contrib-python==4.9.0.80 pynput screeninfo numpy==1.26.4 torch==2.2.2 torchvision==0.17.2 torchaudio==2.2.2 
 
 ```
 
