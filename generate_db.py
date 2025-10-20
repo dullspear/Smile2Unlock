@@ -9,6 +9,7 @@ import face_recognition
 
 from src import util
 from src.fake_face_test import test
+from src.utility import resource_path
 
 
 class App:
@@ -64,8 +65,8 @@ class App:
     def login(self):
         label = test(
             image=self.most_recent_capture_arr,
-            model_dir="resources/anti_spoof_models",
-            device_id="cpu",
+            model_dir=resource_path("resources", "anti_spoof_models"),
+            device_id=0,
         )
         if label == 1:
             name = util.recognize(self.most_recent_capture_arr, self.db_dir)
@@ -86,8 +87,8 @@ class App:
     def logout(self):
         label = test(
             image=self.most_recent_capture_arr,
-            model_dir="resources/anti_spoof_models",
-            device_id="cpu",
+            model_dir=resource_path("resources", "anti_spoof_models"),
+            device_id=0,
         )
         if label == 1:
             name = util.recognize(self.most_recent_capture_arr, self.db_dir)

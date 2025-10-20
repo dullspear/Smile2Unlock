@@ -6,12 +6,7 @@
 # @Software : PyCharm
 import sys
 import os
-sys.path.append("D:\\py_project\\Smile2Unlock")
-# 获取当前工作目录
-new_path = "D:\\py_project\\Smile2Unlock"
-
-# 更改当前工作目录
-os.chdir(new_path)
+from src.utility import resource_path, output_dir
 
 import os
 import cv2
@@ -23,7 +18,8 @@ import time
 from src.anti_spoof_predict import AntiSpoofPredict
 from src.generate_patches import CropImage
 from src.utility import parse_model_name
-warnings.filterwarnings('ignore')
+
+warnings.filterwarnings("ignore")
 
 
 SAMPLE_IMAGE_PATH = "./images/sample/"
@@ -32,7 +28,7 @@ SAMPLE_IMAGE_PATH = "./images/sample/"
 # 因为安卓端APK获取的视频流宽高比为3:4,为了与之一致，所以将宽高比限制为3:4
 def check_image(image):
     height, width, channel = image.shape
-    if width/height != 3/4:
+    if width / height != 3 / 4:
         print("Image is not appropriate!!!\nHeight/Width should be 4/3.")
         return False
     else:
@@ -66,11 +62,11 @@ def test(image, model_dir, device_id):
         img = image_cropper.crop(**param)
         start = time.time()
         prediction += model_test.predict(img, os.path.join(model_dir, model_name))
-        test_speed += time.time()-start
+        test_speed += time.time() - start
 
     # draw result of prediction
     label = np.argmax(prediction)
-    value = prediction[0][label]/2
+    value = prediction[0][label] / 2
 
     return label
 
@@ -79,19 +75,22 @@ if __name__ == "__main__":
     desc = "test"
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument(
-        "--device_id",
-        type=int,
-        default=0,
-        help="which gpu id, [0/1/2/3]")
+        "--device_id", type=int, default=0, help="which gpu id, [0/1/2/3]"
+    )
     parser.add_argument(
         "--model_dir",
         type=str,
-        default="./resources/anti_spoof_models",
-        help="model_lib used to test")
+        default=None,
+        help="model_lib used to test (default: bundled resources/anti_spoof_models)",
+    )
     parser.add_argument(
-        "--image_name",
-        type=str,
-        default="image_F1.jpg",
-        help="image used to test")
+        "--image_name", type=str, default="image_F1.jpg", help="image used to test"
+    )
     args = parser.parse_args()
-    test(args.image_name, args.model_dir, args.device_id)
+    # 运行时默认使用打包后的 resources 目录下模型，如果提供了 --model_dir 则使用该路径
+    model_dir = (
+        args.model_dir
+        if args.model_dir
+        else resource_path("resources", "anti_spoof_models")
+    )
+    test(args.image_name, model_dir, args.device_id)
