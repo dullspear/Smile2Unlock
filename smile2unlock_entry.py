@@ -43,6 +43,9 @@ class loginSystem:
         # 启动程序控制
         threading.Thread(target=self.hook.start_program).start()
         while True:
+            if self.hook.status == 0:
+                log.info("hook.status==0,try to break")
+                break
             if self.success_count >= 1:
                 self.hook.kill_program()
                 log.info("success_count>=1,try to kill hook")
@@ -60,10 +63,9 @@ class loginSystem:
                 try:
                     self.hook.kill_program()
                 except:
+                    print("lose, but hook killed failed")
                     pass
                 self.lock_screen()
-                print("shit")
-                log.info("shit")
                 break
 
             threading.Thread(target=self.process_frame).start()

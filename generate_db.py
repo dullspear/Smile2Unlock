@@ -156,9 +156,13 @@ class App:
 
     def accept_register_new_user(self):
         name = self.entry_text_register_new_user.get(1.0, "end-1c")
+        try:
+            embeddings = face_recognition.face_encodings(self.register_new_user_capture)[0]
 
-        embeddings = face_recognition.face_encodings(self.register_new_user_capture)[0]
-
+        except IndexError:
+            util.msg_box("Error", "No face found.")
+            return
+    
         file = open(os.path.join(self.db_dir, "{}.pickle".format(name)), "wb")
         pickle.dump(embeddings, file)
 

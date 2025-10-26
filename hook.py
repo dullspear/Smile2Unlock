@@ -24,13 +24,28 @@ class Hook:
         pass
 
     def on_press(self, key):
+        k = None
         try:
-            print(f"字母 {key.char} 被按下了")
-            if self.unlock_by_special_key(key.char):
+            if hasattr(key, "char") and key.char is not None:
+                print(f"字母 {key.char} 被按下了")
+                k = key.char
+            else:
+                print(f"特殊的键 {key} 被按下了")
+                # 兼容小键盘数字
+                if hasattr(key, "vk"):
+                    vk = key.vk
+                    if 96 <= vk <= 105:  # 小键盘 0-9
+                        k = str(vk - 96)
+                    elif 48 <= vk <= 57:  # 主键盘 0-9（备用）
+                        k = chr(vk)
+        except AttributeError:
+            print("异常: 无法识别按键")
+
+        if k:
+            print(f"识别到按键: {k}")  # 调试用
+            if self.unlock_by_special_key(k):
                 self.kill_program()
                 return False  # 停止监听
-        except AttributeError:
-            print(f"特殊的键 {key} 被按下了")
         return True
 
     def start_keyboard_listener(self):
@@ -70,15 +85,10 @@ class Hook:
         # 停止键盘监听器
         if self.keyboard_listener:
             self.keyboard_listener.stop()
-        print("1")
         # 关闭所有 Tkinter 窗口
         for root in self.roots:
-            print("a")
             if root.winfo_exists():
-                print("b")
                 root.quit()  # 停止窗口的主循环
-                print("c")
-                print("d")
         print("2")
 
         # 确保程序退出
