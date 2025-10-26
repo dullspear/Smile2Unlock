@@ -9,6 +9,7 @@ import face_recognition
 
 from src import util
 from src.fake_face_test import test
+from src.utility import resource_path
 
 
 class App:
@@ -64,8 +65,8 @@ class App:
     def login(self):
         label = test(
             image=self.most_recent_capture_arr,
-            model_dir="resources/anti_spoof_models",
-            device_id="cpu",
+            model_dir=resource_path("resources", "anti_spoof_models"),
+            device_id=0,
         )
         if label == 1:
             name = util.recognize(self.most_recent_capture_arr, self.db_dir)
@@ -86,8 +87,8 @@ class App:
     def logout(self):
         label = test(
             image=self.most_recent_capture_arr,
-            model_dir="resources/anti_spoof_models",
-            device_id="cpu",
+            model_dir=resource_path("resources", "anti_spoof_models"),
+            device_id=0,
         )
         if label == 1:
             name = util.recognize(self.most_recent_capture_arr, self.db_dir)
@@ -155,9 +156,13 @@ class App:
 
     def accept_register_new_user(self):
         name = self.entry_text_register_new_user.get(1.0, "end-1c")
+        try:
+            embeddings = face_recognition.face_encodings(self.register_new_user_capture)[0]
 
-        embeddings = face_recognition.face_encodings(self.register_new_user_capture)[0]
-
+        except IndexError:
+            util.msg_box("Error", "No face found.")
+            return
+    
         file = open(os.path.join(self.db_dir, "{}.pickle".format(name)), "wb")
         pickle.dump(embeddings, file)
 

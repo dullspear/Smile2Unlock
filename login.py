@@ -1,6 +1,7 @@
 import datetime
 from src.fake_face_test import test
 from src import util
+from src.utility import resource_path
 from logger import log
 
 
@@ -12,7 +13,9 @@ class Login:
         print("开始登录")
         log.info("开始登录")
         label = test(
-            image=img_arr, model_dir="resources/anti_spoof_models", device_id=0
+            image=img_arr,
+            model_dir=resource_path("resources", "anti_spoof_models"),
+            device_id=0,
         )
         if label == 1:
             name = util.recognize(img_arr, self.db_dir)

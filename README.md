@@ -44,7 +44,7 @@
 
 ### 如何使用
 
-本程序没有release打包（因为打包出错），需要手动git clone本项目，并按以下步骤安装必备库
+您可以手动git clone本项目，并按以下步骤安装必备库，或直接前往release界面使用已经打包好的exe程序
 
 ### 1.安装
 
@@ -122,30 +122,9 @@ numpy=1.26.4
 
 ### 6.打包
 
- 本程序曾尝试pyinstaller打包为exe，但失败，以下为部分解决办法，如果您成功打包，欢迎与我联系。
-
-#### 1
-
 ```
-shape_predictor_68_face_landmarks.dat
-[24320] Failed to execute script 'main' due to unhandled exception!
+pyinstaller --clean --noconfirm .\smile2unlock.spec
 ```
-
-请手动在  **_internal**  文件夹中添加 face_recognition_models 文件夹（在源conda的lib库中）
-
-#### 2.
-
-```
-FAILED: ReadProtoFromTextFile(param_file, param). Failed to parse NetParameter file: ./resources/detection_model/deploy.prototxt in function 'cv::dnn::ReadNetParamsFromTextFileOrDie'
-```
-
-复制resource文件夹至根目录
-
-#### 3. 无法解决的报错
-
-Could not locate cudnn_ops_infer64_8.dll. Please make sure it is in your library path!
-
-无法继续打包
 
 ### 项目结构
 
@@ -166,10 +145,10 @@ Could not locate cudnn_ops_infer64_8.dll. Please make sure it is in your library
 ### 流程图
 
 1.generate_db.py
-<img width="458" height="655" alt="202406102023562" src="https://github.com/user-attachments/assets/482650f0-8b26-402c-849a-c199e970a405" />
+`<img width="458" height="655" alt="202406102023562" src="https://github.com/user-attachments/assets/482650f0-8b26-402c-849a-c199e970a405" />`
 
 2.smile2unlock_entry.py
-<img width="1571" height="2257" alt="202406102024455" src="https://github.com/user-attachments/assets/cfe6ca65-2ba5-4f6c-acf5-773d4c554767" />
+`<img width="1571" height="2257" alt="202406102024455" src="https://github.com/user-attachments/assets/cfe6ca65-2ba5-4f6c-acf5-773d4c554767" />`
 
 ### 参考
 

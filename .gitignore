@@ -55,7 +55,7 @@ Desktop.ini
 __pycache__/
 *.pyc
 *.pyo
-*.spec
+# *.spec
 dist/
 build/
 
