@@ -2,8 +2,11 @@
 # @Time : 20-6-9 下午3:06
 # @Author : zhuying
 # @Company : Minivision
-# @File : test.py
+# @File : fake_face_test.py
 # @Software : PyCharm
+import sys
+import os
+from src.utility import resource_path, output_dir
 
 import os
 import cv2
@@ -77,11 +80,17 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model_dir",
         type=str,
-        default="./resources/anti_spoof_models",
-        help="model_lib used to test",
+        default=None,
+        help="model_lib used to test (default: bundled resources/anti_spoof_models)",
     )
     parser.add_argument(
         "--image_name", type=str, default="image_F1.jpg", help="image used to test"
     )
     args = parser.parse_args()
-    test(args.image_name, args.model_dir, args.device_id)
+    # 运行时默认使用打包后的 resources 目录下模型，如果提供了 --model_dir 则使用该路径
+    model_dir = (
+        args.model_dir
+        if args.model_dir
+        else resource_path("resources", "anti_spoof_models")
+    )
+    test(args.image_name, model_dir, args.device_id)
