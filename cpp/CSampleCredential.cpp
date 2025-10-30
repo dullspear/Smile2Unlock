@@ -498,18 +498,162 @@ HRESULT CSampleCredential::CommandLinkClicked(DWORD dwFieldID)
 
     return hr;
 }
-
-
-#include <Python.h>  // 包含Python API的头文件
-#include <windows.h> // 其他必要的头文件
+#include <windows.h>
 #include <string>
-#include <thread>   // 包含此头文件以使用睡眠功能
-#include <chrono>   // 包含此头文件以使用时间相关功能
-#include <fstream>  // 包含此头文件以使用文件流
+#include <fstream>
+#include <shlwapi.h>
+#pragma comment(lib, "shlwapi.lib")
 
-// Collect the username and password into a serialized credential for the correct usage scenario
-// (logon/unlock is what's demonstrated in this sample).  LogonUI then passes these credentials
-// back to the system to log on.
+// 在类的其他方法之前,添加这个辅助函数
+
+// 调用 smile2unlock_entry.exe 获取密码
+// 返回值: 成功时返回密码字符串,失败时返回 nullptr
+// 调用者负责使用 CoTaskMemFree 释放返回的内存
+PWSTR CallSmile2UnlockExe()
+{
+    OutputDebugStringW(L"[Smile2Unlock] === CallSmile2UnlockExe started ===\n");
+
+    WCHAR exePath[MAX_PATH];
+    wcscpy_s(exePath, L"D:\\py_project\\smile2unlock_cp\\dist\\Smile2Unlock\\smile2unlock_entry.exe");
+    
+    WCHAR debugMsg[512];
+    swprintf_s(debugMsg, L"[Smile2Unlock] EXE Path: %s\n", exePath);
+    OutputDebugStringW(debugMsg);
+
+    if (!PathFileExistsW(exePath))
+    {
+        OutputDebugStringW(L"[Smile2Unlock] ERROR: EXE file not found!\n");
+        return nullptr;
+    }
+
+    // 创建临时文件路径
+    WCHAR tempPath[MAX_PATH];
+    GetTempPathW(MAX_PATH, tempPath);
+    WCHAR tempFile[MAX_PATH];
+    swprintf_s(tempFile, L"%ssmile2unlock_result_%d.txt", tempPath, GetCurrentProcessId());
+
+    swprintf_s(debugMsg, L"[Smile2Unlock] Temp file: %s\n", tempFile);
+    OutputDebugStringW(debugMsg);
+
+    DeleteFileW(tempFile);
+
+    // 构建命令行：传递输出文件路径作为参数
+    WCHAR cmdLine[MAX_PATH * 2];
+    swprintf_s(cmdLine, L"\"%s\" \"%s\"", exePath, tempFile);
+
+    swprintf_s(debugMsg, L"[Smile2Unlock] Command line: %s\n", cmdLine);
+    OutputDebugStringW(debugMsg);
+
+    STARTUPINFOW si;
+    PROCESS_INFORMATION pi;
+    ZeroMemory(&si, sizeof(si));
+    si.cb = sizeof(si);
+    si.dwFlags = STARTF_USESHOWWINDOW;
+    si.wShowWindow = SW_HIDE;
+    ZeroMemory(&pi, sizeof(pi));
+
+    PWSTR result = nullptr;
+
+    OutputDebugStringW(L"[Smile2Unlock] Creating process...\n");
+    if (CreateProcessW(
+        nullptr,
+        cmdLine,
+        nullptr,
+        nullptr,
+        FALSE,  // 不需要继承句柄
+        CREATE_NO_WINDOW,
+        nullptr,
+        nullptr,
+        &si,
+        &pi))
+    {
+        OutputDebugStringW(L"[Smile2Unlock] Process created successfully\n");
+        
+        DWORD waitResult = WaitForSingleObject(pi.hProcess, 30000);
+        
+        swprintf_s(debugMsg, L"[Smile2Unlock] Wait result: %d\n", waitResult);
+        OutputDebugStringW(debugMsg);
+
+        if (waitResult == WAIT_OBJECT_0)
+        {
+            DWORD exitCode;
+            GetExitCodeProcess(pi.hProcess, &exitCode);
+            swprintf_s(debugMsg, L"[Smile2Unlock] Process exit code: %d\n", exitCode);
+            OutputDebugStringW(debugMsg);
+
+            // 等待文件写入完成
+            Sleep(500);
+
+            // 检查文件是否存在
+            if (PathFileExistsW(tempFile))
+            {
+                OutputDebugStringW(L"[Smile2Unlock] Reading password from file...\n");
+                
+                std::wifstream resultFile(tempFile);
+                if (resultFile.is_open())
+                {
+                    std::wstring password;
+                    std::getline(resultFile, password);
+                    resultFile.close();
+
+                    // 移除可能的空白字符
+                    while (!password.empty() && (password.back() == L'\r' || password.back() == L'\n' || password.back() == L' '))
+                    {
+                        password.pop_back();
+                    }
+
+                    swprintf_s(debugMsg, L"[Smile2Unlock] Password read (length=%zu): [%s]\n", 
+                        password.length(), password.c_str());
+                    OutputDebugStringW(debugMsg);
+
+                    if (!password.empty() && password != L"000000")
+                    {
+                        size_t len = password.length() + 1;
+                        result = (PWSTR)CoTaskMemAlloc(len * sizeof(WCHAR));
+                        if (result)
+                        {
+                            wcscpy_s(result, len, password.c_str());
+                            OutputDebugStringW(L"[Smile2Unlock] Password copied successfully\n");
+                        }
+                    }
+                    else
+                    {
+                        OutputDebugStringW(L"[Smile2Unlock] Invalid password\n");
+                    }
+                }
+                else
+                {
+                    OutputDebugStringW(L"[Smile2Unlock] ERROR: Failed to open result file\n");
+                }
+                
+                // 删除临时文件
+                DeleteFileW(tempFile);
+            }
+            else
+            {
+                OutputDebugStringW(L"[Smile2Unlock] ERROR: Result file not found\n");
+            }
+        }
+        else
+        {
+            OutputDebugStringW(L"[Smile2Unlock] ERROR: Process timeout or wait failed\n");
+        }
+
+        CloseHandle(pi.hProcess);
+        CloseHandle(pi.hThread);
+    }
+    else
+    {
+        swprintf_s(debugMsg, L"[Smile2Unlock] ERROR: CreateProcess failed, error=%d\n", GetLastError());
+        OutputDebugStringW(debugMsg);
+    }
+
+    swprintf_s(debugMsg, L"[Smile2Unlock] === Function ended, result=%p ===\n", result);
+    OutputDebugStringW(debugMsg);
+
+    return result;
+}
+
 HRESULT CSampleCredential::GetSerialization(_Out_ CREDENTIAL_PROVIDER_GET_SERIALIZATION_RESPONSE* pcpgsr,
     _Out_ CREDENTIAL_PROVIDER_CREDENTIAL_SERIALIZATION* pcpcs,
     _Outptr_result_maybenull_ PWSTR* ppwszOptionalStatusText,
@@ -517,150 +661,46 @@ HRESULT CSampleCredential::GetSerialization(_Out_ CREDENTIAL_PROVIDER_GET_SERIAL
 {
     HRESULT hr = E_UNEXPECTED;
 
-    //std::ofstream logFile("C:\\LoginLog.txt", std::ios::app); // 打开日志文件，追加模式
-    //if (!logFile.is_open()) {
-    //    // 如果日志文件打开失败，可以选择返回错误或者继续执行，具体取决于你的需求
-    //    // 这里选择继续执行，但会输出错误信息到控制台
-    //    OutputDebugStringW(L"Error opening log file!\n");
-    //}
-    //OutputDebugString(L"a");
-    //logFile << "GetSerialization started.\n";
-
     *pcpgsr = CPGSR_NO_CREDENTIAL_NOT_FINISHED;
     *ppwszOptionalStatusText = nullptr;
     *pcpsiOptionalStatusIcon = CPSI_NONE;
     ZeroMemory(pcpcs, sizeof(*pcpcs));
 
-    PyObject* pResult = nullptr;
-
-    //logFile << "Initializing Python.\n";
-    // 初始化 Python 解释器
-
-    Py_Initialize();
-    if (!Py_IsInitialized()) {
-
-        //logFile << "Python initialization failed!\n";
-        return E_FAIL; // 或者其他适当的错误代码
-    }
-    else {
-        //logFile << "Python initialization successful.\n";
-        PyRun_SimpleString("print 'Hello World!!'");
-    }
-
-    //logFile << "Adding Python module search path.\n";
-    // 添加 Python 模块搜索路径
-    PyRun_SimpleString("import sys");
-    PyRun_SimpleString("sys.path.append('D:/py_project/smile2unlock_cp/')");         // 请修改这里！！！！！！！！！！！！！！！！！！！！！！！！！！
-
-    // 导入 Python 模块
-    PyObject* pName = PyUnicode_DecodeFSDefault("smile2unlock_entry");  // 模块名，不包含文件扩展名
-    PyObject* pModule = PyImport_Import(pName);
-
-    Py_DECREF(pName);
-
-    // 获取 sys.path 并写入日志文件 
-    //PyObject* sys_module = PyImport_ImportModule("sys");
-    //if (sys_module) {
-    //    PyObject* path_list = PyObject_GetAttrString(sys_module, "path");
-    //    if (path_list) {
-    //        PyObject* path_repr = PyObject_Repr(path_list);
-    //        if (path_repr) {
-    //            const char* path_str = PyUnicode_AsUTF8(path_repr);
-    //            if (path_str) {
-    //                logFile << "Current sys.path: " << path_str << "\n";
-    //            }
-    //            Py_DECREF(path_repr);
-    //        }
-    //        Py_DECREF(path_list);
-    //    }
-    //    Py_DECREF(sys_module);
-    //}
-    if (pModule != nullptr) {
-        //logFile << "Python module imported successfully.\n";
-        // 在模块中查找并调用主函数
-        PyObject* pFunc = PyObject_GetAttrString(pModule, "capture_and_login");
-
-        if (pFunc && PyCallable_Check(pFunc)) {
-            //logFile << "Python function found and callable.\n";
-            // 调用 Python 函数
-            pResult = PyObject_CallObject(pFunc, nullptr);
-            if (pResult != nullptr) {
-                //logFile << "Python function called successfully.\n";
-                // 函数调用成功
-                //Py_DECREF(pResult); // 注释掉这行，因为后面会用到 pResult
-            }
-            else {
-                //logFile << "Python function call failed.\n";
-                // 函数调用失败
-                PyErr_Print();
-            }
-            Py_DECREF(pFunc);
-        }
-        else {
-            //logFile << "Python function not found or not callable.\n";
-            // 找不到函数或函数不可调用
-            PyErr_Print();
-        }
-
-        Py_DECREF(pModule);
-    }
-    else {
-        //logFile << "Python module import failed.\n";
-    }
+    // 调用 exe 获取密码
+    PWSTR authPassword = CallSmile2UnlockExe();
     
-    // 在这里不要 Py_Finalize(); 因为后面可能还需要使用 Python 结果
-    // 将 pResult 转换为宽字符字符串 PCWSTR 类型
-    
-    PWSTR authPassword;
-    if (pResult == nullptr) {
+    // 如果获取失败,使用用户输入的密码
+    if (authPassword == nullptr)
+    {
         authPassword = _rgFieldStrings[SFI_PASSWORD];
-    } else {
-        authPassword = PyUnicode_AsWideCharString(pResult, nullptr);
     }
-    // 释放 pResult
-    Py_XDECREF(pResult);
-
 
     // For local user, the domain and user name can be split from _pszQualifiedUserName (domain\username).
     // CredPackAuthenticationBuffer() cannot be used because it won't work with unlock scenario.
     if (_fIsLocalUser)
     {
-        //logFile << "_fIsLocalUser is true.\n";
         PWSTR pszDomain;
         PWSTR pszUsername;
         PWSTR pwzProtectedPassword;
 
-        //logFile << "Splitting domain and username.\n";
         hr = SplitDomainAndUsername(_pszQualifiedUserName, &pszDomain, &pszUsername);
         if (SUCCEEDED(hr))
         {
-            //logFile << "Domain and username split successfully.\n";
             KERB_INTERACTIVE_UNLOCK_LOGON kiul;
 
             hr = ProtectIfNecessaryAndCopyPassword(authPassword, _cpus, &pwzProtectedPassword);
-            //logFile << "Initializing KerbInteractiveUnlockLogon.\n";
             hr = KerbInteractiveUnlockLogonInit(pszDomain, pszUsername, pwzProtectedPassword, _cpus, &kiul);
             CoTaskMemFree(pwzProtectedPassword);
 
-
             if (SUCCEEDED(hr))
             {
-                //logFile << "KerbInteractiveUnlockLogon initialized successfully.\n";
-                // We use KERB_INTERACTIVE_UNLOCK_LOGON in both unlock and logon scenarios.  It contains a
-                // KERB_INTERACTIVE_LOGON to hold the creds plus a LUID that is filled in for us by Winlogon
-                // as necessary.
-
-                //logFile << "Packing KerbInteractiveUnlockLogon.\n";
                 hr = KerbInteractiveUnlockLogonPack(kiul, &pcpcs->rgbSerialization, &pcpcs->cbSerialization);
                 if (SUCCEEDED(hr))
                 {
-                    //logFile << "KerbInteractiveUnlockLogon packed successfully.\n";
                     ULONG ulAuthPackage;
-                    //logFile << "Retrieving NegotiateAuthPackage.\n";
                     hr = RetrieveNegotiateAuthPackage(&ulAuthPackage);
                     if (SUCCEEDED(hr))
                     {
-                        //logFile << "NegotiateAuthPackage retrieved successfully.\n";
                         pcpcs->ulAuthenticationPackage = ulAuthPackage;
                         pcpcs->clsidCredentialProvider = CLSID_CSample;
                         // At this point the credential has created the serialized credential used for logon
@@ -725,13 +765,12 @@ HRESULT CSampleCredential::GetSerialization(_Out_ CREDENTIAL_PROVIDER_GET_SERIAL
             }
         }
     }
-    // 释放authPassword内存
-    if (authPassword != _rgFieldStrings[SFI_PASSWORD]) {
-        PyMem_Free((void*)authPassword);
+
+    // 释放 authPassword 内存(如果是我们分配的)
+    if (authPassword != nullptr && authPassword != _rgFieldStrings[SFI_PASSWORD])
+    {
+        CoTaskMemFree(authPassword);
     }
-    // 确保在退出前调用 Py_Finalize()
-    //logFile << "Finalizing Python.\n";
-    Py_Finalize();  
 
     return hr;
 }
