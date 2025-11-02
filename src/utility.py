@@ -41,37 +41,41 @@ def make_if_not_exist(folder_path):
         os.makedirs(folder_path)
 
 
-def get_base_path():
-    """返回运行时资源基准路径：
-    - 如果程序被 PyInstaller 打包（frozen），优先使用 sys._MEIPASS（onefile）
-      否则使用 exe 所在目录；
-    - 开发模式下返回源码目录。
+def get_project_root():
+    """返回项目根目录的绝对路径。
+    - 打包后：exe 所在目录（与 smile2unlock_entry.exe 同级）
+    - 开发时：当前工作目录（cwd）
+
+    开发时假设用户在项目根目录运行命令（如 python generate_db.py），这是标准开发实践。
+    无论从哪个目录调用，始终返回同一个根目录。
     """
     import sys
 
     if getattr(sys, "frozen", False):
+        # 打包后：返回 exe 所在目录
+        return os.path.dirname(sys.executable)
+    else:
+        # 开发时：使用当前工作目录作为项目根
+        return os.path.abspath(os.getcwd())
+
+
+def get_resource_path(*parts):
+    """返回只读资源文件的绝对路径（如模型文件等打包到 _internal 的资源）。
+    内部调用 get_project_root() 并拼接 'resources' 路径。
+
+    用法:
+        get_resource_path('anti_spoof_models')  -> 项目根/resources/anti_spoof_models
+        get_resource_path('detection_model', 'deploy.prototxt')  -> 项目根/resources/detection_model/deploy.prototxt
+    """
+    import sys
+
+    if getattr(sys, "frozen", False):
+        # 打包后：优先使用 _MEIPASS（onefile 模式）
         base = getattr(sys, "_MEIPASS", None)
         if base:
-            return base
-        return os.path.dirname(sys.executable)
-
-    # 非打包时使用当前工作目录作为项目根（用户要求：运行 py 时 cwd 即为项目根）
-    return os.path.abspath(os.getcwd())
-
-
-def resource_path(*parts):
-    """返回资源的运行时绝对路径（相对于 project base）。
-    用法: resource_path('resources', 'detection_model', 'deploy.prototxt')
-    """
-    base = get_base_path()
-    return os.path.join(base, *parts)
-
-
-def output_dir():
-    """返回用于写入/生成文件的目录（可写）。对于 exe，使用 exe 同目录；开发模式使用源码目录。"""
-    import sys
-
-    if getattr(sys, "frozen", False):
-        return os.path.dirname(sys.executable)
-    # 开发模式下使用当前工作目录
-    return os.path.abspath(os.getcwd())
+            return os.path.join(base, "resources", *parts)
+        # onedir 模式：使用 exe 所在目录
+        return os.path.join(get_project_root(), "resources", *parts)
+    else:
+        # 开发时：使用项目根目录
+        return os.path.join(get_project_root(), "resources", *parts)

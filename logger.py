@@ -4,6 +4,7 @@ import logging
 import os
 from logging import handlers
 from pathlib import Path
+from src.utility import get_project_root
 
 
 class Logger:
@@ -23,8 +24,8 @@ class Logger:
             datefmt="%Y-%m-%d %H:%M:%S",
         )
 
-        # 指定日志输出路径
-        self.log_path = "./log/"
+        # 指定日志输出路径 - 日志目录在项目根目录下
+        self.log_path = os.path.join(get_project_root(), "log")
         if not Path(self.log_path).is_dir():
             os.makedirs(self.log_path)
 
@@ -32,7 +33,7 @@ class Logger:
         # _rq = time.strftime("%Y%m%d%H%M%S", time.localtime(time.time()))
         _rq = "log"
 
-        self.log_info_file = self.log_path + _rq + ".txt"
+        self.log_info_file = os.path.join(self.log_path, _rq + ".txt")
 
         # 控制台输出 - 注释掉，避免污染 stdout
         self.set_console_logger()

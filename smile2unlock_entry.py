@@ -5,14 +5,15 @@ import cv2
 from login import Login
 from logger import log
 import config
+from src.utility import get_project_root
 
 
 def capture_and_login(output_file=None):
     log.info("main is running")
-    config.load_config("config.json")
+    config.load_config(os.path.join(get_project_root(), "config.json"))
 
     camera = cv2.VideoCapture(0)
-    login_class = Login("./db")
+    login_class = Login(os.path.join(get_project_root(), "db"))
 
     success_count = 0
     loss_count = 0

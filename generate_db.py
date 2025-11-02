@@ -9,7 +9,7 @@ import face_recognition
 
 from src import util
 from src.fake_face_test import test
-from src.utility import resource_path
+from src.utility import get_resource_path, get_project_root
 import config  # noqa   # 强制加载config以方便使用配置功能
 
 
@@ -38,11 +38,11 @@ class App:
 
         self.add_webcam(self.webcam_label)
 
-        self.db_dir = "db"
+        self.db_dir = os.path.join(get_project_root(), "db")
         if not os.path.exists(self.db_dir):
             os.mkdir(self.db_dir)
 
-        self.log_path = "log.txt"
+        self.log_path = os.path.join(get_project_root(), "log.txt")
 
     def add_webcam(self, label):
         if "cap" not in self.__dict__:
@@ -66,7 +66,7 @@ class App:
     def login(self):
         label = test(
             image=self.most_recent_capture_arr,
-            model_dir=resource_path("resources", "anti_spoof_models"),
+            model_dir=get_resource_path("anti_spoof_models"),
             device_id=0,
         )
         if label == 1:
@@ -88,7 +88,7 @@ class App:
     def logout(self):
         label = test(
             image=self.most_recent_capture_arr,
-            model_dir=resource_path("resources", "anti_spoof_models"),
+            model_dir=get_resource_path("anti_spoof_models"),
             device_id=0,
         )
         if label == 1:
