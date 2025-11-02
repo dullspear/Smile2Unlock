@@ -2,7 +2,7 @@ import datetime
 import os
 from src.fake_face_test import test
 from src import util
-from src.utility import resource_path
+from src.utility import get_resource_path
 from logger import log
 
 
@@ -15,7 +15,7 @@ class Login:
         log.info("开始登录")
         label = test(
             image=img_arr,
-            model_dir=resource_path("resources", "anti_spoof_models"),
+            model_dir=get_resource_path("anti_spoof_models"),
             device_id=0,
         )
         if label == 1:

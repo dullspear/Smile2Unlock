@@ -6,7 +6,7 @@
 # @Software : PyCharm
 import sys
 import os
-from src.utility import resource_path, output_dir
+from src.utility import get_resource_path
 
 import os
 import cv2
@@ -89,8 +89,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     # 运行时默认使用打包后的 resources 目录下模型，如果提供了 --model_dir 则使用该路径
     model_dir = (
-        args.model_dir
-        if args.model_dir
-        else resource_path("resources", "anti_spoof_models")
+        args.model_dir if args.model_dir else get_resource_path("anti_spoof_models")
     )
     test(args.image_name, model_dir, args.device_id)

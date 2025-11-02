@@ -1,8 +1,10 @@
 import json
 import os
+from src.utility import get_project_root
 
-CONFIG_FILE = "config.json"
-DEFAULT_CONFIG = {"password": 123456, "transparency": 0.5}
+# 配置文件始终在项目根目录
+CONFIG_FILE = os.path.join(get_project_root(), "config.json")
+DEFAULT_CONFIG = {"password": 000000, "transparency": 0.5}
 
 
 def load_config(file_path):

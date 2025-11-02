@@ -21,7 +21,7 @@ from src.model_lib.MiniFASNet import (
     MiniFASNetV2SE,
 )
 from src.data_io import transform as trans
-from src.utility import get_kernel, parse_model_name, resource_path
+from src.utility import get_kernel, parse_model_name, get_resource_path
 import torch
 
 MODEL_MAPPING = {
@@ -34,11 +34,11 @@ MODEL_MAPPING = {
 
 class Detection:
     def __init__(self):
-        # 使用 resource_path 确保在打包后也能正确找到资源
-        caffemodel = resource_path(
-            "resources", "detection_model", "Widerface-RetinaFace.caffemodel"
+        # 使用 get_resource_path 确保在打包后也能正确找到资源
+        caffemodel = get_resource_path(
+            "detection_model", "Widerface-RetinaFace.caffemodel"
         )
-        deploy = resource_path("resources", "detection_model", "deploy.prototxt")
+        deploy = get_resource_path("detection_model", "deploy.prototxt")
 
         # 强制使用 CPU 后端，避免对 cudnn/cuda dll 的依赖（如需 GPU，可移除以下两行并在 spec 加入对应 dll）
         self.detector = cv2.dnn.readNetFromCaffe(deploy, caffemodel)
