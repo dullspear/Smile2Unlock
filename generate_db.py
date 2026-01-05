@@ -5,11 +5,12 @@ import pickle
 import tkinter as tk
 import cv2
 from PIL import Image, ImageTk
-import face_recognition
+
 
 from src import util
 from src.fake_face_test import test
 from src.utility import resource_path
+from logger import log
 
 
 class App:
@@ -157,12 +158,30 @@ class App:
     def accept_register_new_user(self):
         name = self.entry_text_register_new_user.get(1.0, "end-1c")
         try:
-            embeddings = face_recognition.face_encodings(self.register_new_user_capture)[0]
+            face_recognition = util.safe_import_face_recognition()
+            embeddings_list = face_recognition.face_encodings(
+                self.register_new_user_capture
+            )
+            embeddings = embeddings_list[0]
+
+        except RuntimeError as e:
+            # 常见：CUDA driver/runtime 不匹配 或 无 NVIDIA 环境却触发 CUDA 初始化
+            if "cudaGetDevice" in str(e) or "CUDA" in str(e):
+                log.error("generate_db: CUDA-related RuntimeError: %s", str(e))
+                util.msg_box(
+                    "Error",
+                    "检测到 dlib/face_recognition 触发了 CUDA 初始化失败。\n"
+                    "请确认你安装的是 CPU 版 dlib（conda-forge 的 dlib 一般是 CPU 构建），或更新/匹配 CUDA/驱动环境。\n\n"
+                    f"详细信息: {e}",
+                )
+                return
+            raise
 
         except IndexError:
+            log.info("generate_db: no face found while registering user=%s", name)
             util.msg_box("Error", "No face found.")
             return
-    
+
         file = open(os.path.join(self.db_dir, "{}.pickle".format(name)), "wb")
         pickle.dump(embeddings, file)
 
