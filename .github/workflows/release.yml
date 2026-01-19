@@ -5,6 +5,11 @@ on:
     branches:
       - main
 
+# 并发控制：防止多次 push 同时执行导致冲突
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false  # 不取消旧流程，排队执行
+
 jobs:
   get-version:
     runs-on: ubuntu-latest
@@ -238,6 +243,107 @@ jobs:
           fi
 
           echo "✅ Changelog 生成完成"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 自动转正式版（当版本号前缀变大时）
+        id: promote_previous
+        run: |
+          VERSION=${{ needs.get-version.outputs.version }}
+          BASE_VERSION=$(echo "$VERSION" | sed 's/-.*$//')
+          IS_PRERELEASE=${{ needs.get-version.outputs.is_prerelease }}
+
+          echo "📦 当前版本: $VERSION (基础版本: $BASE_VERSION)"
+          echo "📦 是否为预发布: $IS_PRERELEASE"
+
+          # 只有当前版本是预发布版时，才检查是否需要转正上一版本
+          if [ "$IS_PRERELEASE" = "true" ]; then
+            echo "🔍 检查是否需要转正上一版本..."
+            
+            # 获取最新的预发布版本（排除当前版本）
+            PREV_PRERELEASE=$(gh release list --limit 100 | grep 'Pre-release' | awk '{print $1}' | grep -v "^v$VERSION$" | head -n1)
+            
+            if [ -n "$PREV_PRERELEASE" ]; then
+              echo "📝 找到上一预发布版本: $PREV_PRERELEASE"
+              
+              # 提取上一版本的基础版本号
+              PREV_BASE=$(echo "$PREV_PRERELEASE" | sed 's/^v//' | sed 's/-.*$//')
+              
+              echo "📊 版本对比: $PREV_BASE vs $BASE_VERSION"
+              
+              # 比较版本号（使用简单的字符串比较 + sort -V）
+              LARGER=$(printf "%s\n%s\n" "$PREV_BASE" "$BASE_VERSION" | sort -V | tail -n1)
+              
+              if [ "$LARGER" = "$BASE_VERSION" ] && [ "$PREV_BASE" != "$BASE_VERSION" ]; then
+                echo "🎉 检测到版本号前缀变大: $PREV_BASE → $BASE_VERSION"
+                echo "🔄 开始转正 $PREV_PRERELEASE 为正式版..."
+                
+                # 1. 创建临时目录存放旧产物
+                mkdir -p old-artifacts
+                
+                # 2. 下载旧版本产物（失败则跳过转正）
+                echo "📥 下载旧版本产物..."
+                if gh release download "$PREV_PRERELEASE" --dir old-artifacts/ 2>/dev/null; then
+                  echo "✅ 产物下载成功"
+                  
+                  # 3. 保存旧版本的 changelog
+                  echo "📋 保存旧版本 changelog..."
+                  OLD_CHANGELOG=$(gh release view "$PREV_PRERELEASE" --json body -q .body 2>/dev/null || echo "")
+                  
+                  # 4. 获取旧版本指向的 commit
+                  echo "🔍 获取旧版本 commit..."
+                  PREV_COMMIT=$(git rev-list -n 1 "$PREV_PRERELEASE" 2>/dev/null || echo "")
+                  
+                  if [ -z "$PREV_COMMIT" ]; then
+                    echo "⚠️  无法获取旧版本 commit，使用当前 HEAD"
+                    PREV_COMMIT="HEAD~1"
+                  fi
+                  
+                  # 5. 删除旧版本 release 和 tag
+                  echo "🗑️  删除旧版本 release 和 tag..."
+                  gh release delete "$PREV_PRERELEASE" --yes 2>/dev/null || echo "⚠️  Release 删除失败或不存在"
+                  git push --delete origin "$PREV_PRERELEASE" 2>/dev/null || echo "⚠️  Tag 删除失败或不存在"
+                  git tag -d "$PREV_PRERELEASE" 2>/dev/null || true
+                  
+                  # 6. 创建新的正式版 tag
+                  NEW_STABLE_TAG="v$PREV_BASE"
+                  echo "🏷️  创建新正式版 tag: $NEW_STABLE_TAG"
+                  git tag "$NEW_STABLE_TAG" "$PREV_COMMIT"
+                  git push origin "$NEW_STABLE_TAG"
+                  
+                  # 7. 创建新的正式版 release
+                  echo "🎊 创建正式版 release: $NEW_STABLE_TAG"
+                  
+                  # 在 changelog 前加上转正说明
+                  PROMOTED_NOTE="## 📢 版本说明\n\n本版本由 \`$PREV_PRERELEASE\` 自动转为正式版。\n\n---\n\n"
+                  FINAL_CHANGELOG=$(printf "%b%s" "$PROMOTED_NOTE" "$OLD_CHANGELOG")
+                  
+                  # 上传产物并创建 release
+                  echo "$FINAL_CHANGELOG" > promoted-changelog.md
+                  gh release create "$NEW_STABLE_TAG" \
+                    --title "v$PREV_BASE" \
+                    --notes-file promoted-changelog.md \
+                    old-artifacts/*
+                  
+                  echo "✅ 成功将 $PREV_PRERELEASE 转为正式版 $NEW_STABLE_TAG"
+                  echo "promoted=true" >> $GITHUB_OUTPUT
+                  echo "promoted_tag=$NEW_STABLE_TAG" >> $GITHUB_OUTPUT
+                else
+                  echo "⚠️  无法下载旧版本产物，跳过转正"
+                  echo "promoted=false" >> $GITHUB_OUTPUT
+                fi
+              else
+                echo "ℹ️  版本号未变大或相同版本，无需转正"
+                echo "promoted=false" >> $GITHUB_OUTPUT
+              fi
+            else
+              echo "ℹ️  未找到上一预发布版本，无需转正"
+              echo "promoted=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "ℹ️  当前版本为正式版，跳过转正逻辑"
+            echo "promoted=false" >> $GITHUB_OUTPUT
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

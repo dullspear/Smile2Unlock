@@ -1,103 +1,76 @@
-# 版本发布指南（SPlayer 风格 - 简化版）
+# 版本发布指南
 
 ## 核心规则
 
-**简单明了：**
-
-- ✅ 只有 `X.Y.Z`（纯数字）和 `X.Y.Z-stable` 是**正式版**
-- ✅ 其他一律是**预发布版**（beta/alpha/canary/rc/nightly 等）
-- ✅ Tag 和 Release 标题自动去除 `-stable` 和颜色，其他保持一致
+- ✅ 纯数字 `X.Y.Z` 或 `X.Y.Z-stable` = **正式版**
+- ✅ 其他后缀（beta/rc/alpha 等）= **预发布版**
+- ✅ **自动转正**：发布新版本 beta 时，上一版本 beta 自动变正式版
 
 ## 快速开始
 
-### 发布新版本只需修改 README.md 一处
+### 修改 README.md 版本号
 
 ```markdown
-<!-- 正式版（推荐，纯数字） -->
-<img src="https://img.shields.io/badge/version-2.0.4-blue"/>
-
-<!-- 正式版（显式 stable，会自动去除） -->
-<img src="https://img.shields.io/badge/version-2.0.4--stable-green"/>
+<!-- 正式版 -->
+<img src="https://img.shields.io/badge/version-1.2.0-blue"/>
 
 <!-- Beta 版 -->
-<img src="https://img.shields.io/badge/version-2.0.5--beta-orange"/>
-
-<!-- Alpha 版 -->
-<img src="https://img.shields.io/badge/version-2.0.5--alpha-red"/>
-
-<!-- 金丝雀版 -->
-<img src="https://img.shields.io/badge/version-2.0.6--canary-yellow"/>
+<img src="https://img.shields.io/badge/version-1.2.0--beta-orange"/>
 
 <!-- RC 版 -->
-<img src="https://img.shields.io/badge/version-2.0.6--rc1-purple"/>
-
-<!-- 每日构建版 -->
-<img src="https://img.shields.io/badge/version-2.0.6--nightly-gray"/>
+<img src="https://img.shields.io/badge/version-1.2.0--rc-purple"/>
 ```
 
-**注意**：Shields.io 中 `-` 需要用 `--` 转义，所以 `2.0.4-beta` 写成 `2.0.4--beta`
+**注意**：Shields.io 中 `-` 用 `--` 转义，如 `1.2.0-beta` 写成 `1.2.0--beta`
 
-## Badge 说明
+### 提交并推送
 
-### 版本 Badge（任意后缀支持）
-
-- **格式**：`version-X.Y.Z-颜色` 或 `version-X.Y.Z--后缀-颜色`
-- **颜色自选**（workflow 会自动去除）：
-  - 正式版建议：`blue` / `green`
-  - Beta 建议：`orange` / `yellow`
-  - Alpha 建议：`red`
-  - 其他自定义：`purple` / `gray` / `pink` 等
-
-### 构建状态 Badge
-
-使用 GitHub Actions 官方 badge（现在显示 "Build & Release"）：
-
-```markdown
-<img src="https://github.com/dullspear/CQUPT_Link/actions/workflows/release.yml/badge.svg"/>
+```bash
+git add README.md
+git commit -m "chore: bump version to 1.2.0-beta"
+git push origin main
 ```
 
 ## 发布流程
 
-### 1. 修改版本号（README.md）
-
-**正式版 2.0.4：**
-
+### 场景 1：同版本多次调试（覆盖）
 ```markdown
-<img src="https://img.shields.io/badge/version-2.0.4-blue"/>
+<!-- 多次 push 都用这个，每次覆盖 v1.2.0-beta -->
+<img src="https://img.shields.io/badge/version-1.2.0--beta-orange"/>
 ```
 
-**金丝雀版 2.0.5：**
-
+### 场景 2：新版本 beta（自动转正上一版本）
 ```markdown
-<img src="https://img.shields.io/badge/version-2.0.5--canary-yellow"/>
+<!-- 发布 v1.3.0-beta 时，自动把 v1.2.0-beta 转为 v1.2.0 正式版 -->
+<img src="https://img.shields.io/badge/version-1.3.0--beta-orange"/>
 ```
 
-### 2. 提交并推送
-
-```bash
-git add README.md
-git commit -m "chore: bump version to 2.0.4"
-git push origin main
+### 场景 3：直接发正式版（手动）
+```markdown
+<!-- 不经过 beta，直接发正式版 -->
+<img src="https://img.shields.io/badge/version-1.2.0-blue"/>
 ```
 
-## Changelog 格式（自动生成）
+## 自动转正详解
 
-```
-## What's Changed
---------------
-- feat: add auto-login by @author (Dec 20, 08:30 AM GMT+0000)
-- fix: network issue by @author (Dec 19, 03:20 PM GMT+0000)
-- docs: update README by @author (Dec 18, 10:15 AM GMT+0000)
-```
+**触发条件：**  
+当前版本是预发布 + 版本号前缀变大（如 `1.2` → `1.3`）
+
+**执行操作：**
+1. 下载上一版本产物
+2. 删除旧 tag/release（如 `v1.2.0-beta`）
+3. 创建新正式版（如 `v1.2.0`）
+4. 复用产物，继承 changelog
+
+**失败保护：**  
+产物下载失败 → 跳过转正，不影响当前版本发布
 
 ## 注意事项
 
-1. ✅ **版本号只改一处**：README.md 的 badge URL
-2. ✅ **自动去除 stable**：`2.0.4-stable` → `2.0.4`（Release 中）
-3. ✅ **保留其他后缀**：`2.0.4-beta` / `2.0.4-canary` 等保持不变
-4. ✅ **极简判断逻辑**：纯数字 = 正式版，其他 = 预发布版
-5. ✅ **删除旧 Release**：同版本号会先删除旧的再创建新的
-6. ✅ **时间格式标准**：`Dec 20, 08:30 AM GMT+0000`（Actions 运行在 UTC）
+1. ✅ **版本号只改一处**：README.md 的 badge
+2. ✅ **自动去除 `-stable`**：正式版 tag 为 `vX.Y.Z`
+3. ✅ **同版本覆盖**：相同版本号会重建 release
+4. ✅ **完全自动**：无需手动操作，push 即可
 7. ✅ **Build & Release badge**：自动显示构建状态
 8. ✅ **支持任意后缀**：未来添加新版本类型无需修改 workflow
 
