@@ -1,0 +1,282 @@
+name: Build & Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  get-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+      is_prerelease: ${{ steps.get_version.outputs.is_prerelease }}
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 获取完整历史，用于生成 changelog
+
+      - name: 提取版本号
+        id: get_version
+        run: |
+          # 从 README.md 提取版本号（支持任意后缀，包括 Shields.io 的 -- 转义）
+          # 匹配格式: version-X.Y.Z-颜色 或 version-X.Y.Z--后缀-颜色
+          # 注意：Shields.io 中 - 需要用 -- 转义，所以 2.0.3-beta 在 badge 中是 2.0.3--beta
+          full_version=$(sed -n 's/.*badge\/version-\([0-9]\+\.[0-9]\+\.[0-9]\+\(--\?[a-zA-Z0-9]\+\)\?\)-.*/\1/p' README.md | head -n1)
+
+          if [ -z "$full_version" ]; then
+            echo "❌ 无法提取版本号，请检查 README.md 中的版本格式"
+            echo "期望格式: badge/version-X.Y.Z-颜色 或 badge/version-X.Y.Z--后缀-颜色"
+            exit 1
+          fi
+
+          echo "📦 原始版本: $full_version"
+
+          # 将 Shields.io 的 -- 转义还原为 -
+          full_version=$(echo "$full_version" | sed 's/--/-/g')
+          echo "🔄 还原转义: $full_version"
+
+          # 移除 -stable 后缀（正式版不需要 stable 标识）
+          clean_version=$(echo "$full_version" | sed 's/-stable$//')
+
+          echo "✅ 清理后版本: $clean_version"
+          echo "version=$clean_version" >> $GITHUB_OUTPUT
+
+          # 判断是否为正式版本
+          # 正式版：纯数字 (X.Y.Z) 或 X.Y.Z-stable（已去除 -stable）
+          if [[ "$clean_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+            echo "✨ 正式版本"
+          else
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+            echo "🧪 预发布版本 (${clean_version##*-})"
+          fi
+
+  build-windows:
+    needs: get-version
+    runs-on: windows-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置Python环境
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 初始化 conda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          miniforge-version: latest
+          activate-environment: Smile2Unlock
+          python-version: '3.11.9'
+
+      - name: 创建 conda 环境
+        shell: bash
+        run: conda create -n Smile2Unlock python=3.11.9 -y
+
+      - name: 通过 conda 安装 dlib
+        shell: bash
+        run: conda install dlib=19.24.4 -c conda-forge -y
+
+      - name: 通过 pip 安装其他必要库
+        shell: bash
+        run: |
+          conda run -n Smile2Unlock pip install cmake==3.29.3 face_recognition opencv-contrib-python==4.9.0.80 pynput screeninfo numpy==1.26.4 torch==2.2.2 torchvision==0.17.2 torchaudio==2.2.2
+
+      - name: 安装PyInstaller
+        shell: bash
+        run: conda run -n Smile2Unlock pip install pyinstaller
+
+      - name: 打包为Windows可执行文件
+        shell: bash
+        run: conda run -n Smile2Unlock pyinstaller --clean --noconfirm .\\smile2unlock.spec
+
+      - name: 上传 Windows 构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: Smile2Unlock-win
+          path: dist\Smile2Unlock\*.exe
+
+#  build-linux:
+#    needs: get-version
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: 检出代码
+#        uses: actions/checkout@v4
+#
+#      - name: 设置Python环境
+#        uses: actions/setup-python@v5
+#        with:
+#          python-version: '3.11'
+#
+#      - name: 安装依赖
+#        run: |
+#          if [ -f pip_requirements.txt ]; then
+#            pip install -r pip_requirements.txt || pip install cmake==3.29.3 face-recognition opencv-contrib-python==4.9.0.80 pynput screeninfo numpy==1.26.4 torch==2.2.2 torchvision==0.17.2 torchaudio==2.2.2
+#          elif [ -f requirements.txt ]; then
+#            pip install -r requirements.txt
+#          else
+#            pip install cmake==3.29.3 face-recognition opencv-contrib-python==4.9.0.80 pynput screeninfo numpy==1.26.4 torch==2.2.2 torchvision==0.17.2 torchaudio==2.2.2
+#          fi
+#
+#      - name: 安装PyInstaller
+#        run: pip install pyinstaller
+#
+#      - name: 打包为Linux可执行文件
+#        run: |
+#          pyinstaller --clean --noconfirm ./smile2unlock.spec
+#          # 确保可执行权限
+#          chmod +x dist/Smile2Unlock/* || true
+#
+#      - name: 上传 Linux 构建产物
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: Smile2Unlock-linux
+#          path: dist/Smile2Unlock/*
+
+  create-release:
+    needs: [build-windows, get-version]
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 获取完整历史用于生成 changelog
+
+      - name: 下载构建产物
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: 生成 Changelog
+        id: changelog
+        run: |
+          VERSION=${{ needs.get-version.outputs.version }}
+          TAG="v$VERSION"
+          BASE_VERSION=$(echo "$VERSION" | sed 's/-.*$//')
+
+          echo "📦 完整版本: $VERSION"
+          echo "📦 基础版本: $BASE_VERSION"
+
+          # 1. 先保存当前 tag 的旧内容（删除前）
+          echo "🔍 检查 $TAG 是否已存在..."
+          OLD_BODY=$(gh release view $TAG --json body -q .body 2>/dev/null || echo "")
+
+          # 2. 尝试从同版本的其他 Release 获取头部和变更（如 v2.0.3-beta 获取 v2.0.3 的内容）
+          INHERITED_HEADER=""
+          INHERITED_CHANGES=""
+          if [ -z "$OLD_BODY" ]; then
+            echo "🔍 查找同版本 (v$BASE_VERSION*) 的其他 Release..."
+            # 获取同版本的所有 Release
+            SAME_VERSION_RELEASES=$(gh release list --limit 50 | grep "^v$BASE_VERSION" | head -n 1 | awk '{print $1}')
+
+            if [ -n "$SAME_VERSION_RELEASES" ] && [ "$SAME_VERSION_RELEASES" != "$TAG" ]; then
+              echo "📝 发现同版本 Release: $SAME_VERSION_RELEASES"
+              RELATED_BODY=$(gh release view "$SAME_VERSION_RELEASES" --json body -q .body 2>/dev/null || echo "")
+              if [ -n "$RELATED_BODY" ]; then
+                # 提取头部内容（What's Changed 之前）
+                INHERITED_HEADER=$(echo "$RELATED_BODY" | sed -n '1,/## What'\''s Changed/p' | sed '$d')
+                # 提取 What's Changed 中的条目（只取 "- " 开头，避免分隔线重复）
+                INHERITED_CHANGES=$(echo "$RELATED_BODY" | awk '/^## What\x27s Changed/{flag=1;next}/^## /{flag=0}flag && /^- /{print}')
+              fi
+            fi
+          fi
+
+          # 3. 生成新的提交记录
+          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+
+          if [ -z "$PREV_TAG" ]; then
+            echo "📝 首次发布，生成完整历史"
+            NEW_COMMITS=$(git log --pretty=format:"- %s by @%an (%ad)" --date=format:'%b %d, %I:%M %p GMT%z' --no-merges | sed 's/GMT+/GMT+/;s/GMT-/GMT-/')
+          else
+            echo "📝 生成从 $PREV_TAG 到当前的更新日志"
+            NEW_COMMITS=$(git log $PREV_TAG..HEAD --pretty=format:"- %s by @%an (%ad)" --date=format:'%b %d, %I:%M %p GMT%z' --no-merges | sed 's/GMT+/GMT+/;s/GMT-/GMT-/')
+          fi
+
+          # 4. 构建最终的 Changelog
+          > changelog.md  # 清空文件
+
+          if [ -n "$OLD_BODY" ]; then
+            echo "📋 保留当前 tag 的旧内容"
+            # 提取头部
+            HEADER=$(echo "$OLD_BODY" | sed -n '1,/## What'\''s Changed/p' | sed '$d')
+            # 提取旧的变更记录（只要以 "- " 开头，避免分隔线重复）
+            OLD_CHANGES=$(echo "$OLD_BODY" | awk '/^## What\x27s Changed/{flag=1;next}/^## /{flag=0}flag && /^- /{print}')
+
+            if [ -n "$HEADER" ]; then
+              echo "$HEADER" >> changelog.md
+              echo "" >> changelog.md
+            fi
+
+            echo "## What's Changed" >> changelog.md
+            echo "--------------" >> changelog.md
+            echo "$NEW_COMMITS" >> changelog.md
+
+            if [ -n "$OLD_CHANGES" ]; then
+              echo "$OLD_CHANGES" >> changelog.md
+            fi
+          elif [ -n "$INHERITED_HEADER" ]; then
+            echo "📝 继承同版本 Release 的完整内容"
+            echo "$INHERITED_HEADER" >> changelog.md
+            echo "" >> changelog.md
+            echo "## What's Changed" >> changelog.md
+            echo "--------------" >> changelog.md
+            echo "$NEW_COMMITS" >> changelog.md
+
+            if [ -n "$INHERITED_CHANGES" ]; then
+              echo "📋 追加继承的旧变更记录"
+              echo "$INHERITED_CHANGES" >> changelog.md
+            fi
+          else
+            echo "✨ 创建全新 Release"
+            echo "## What's Changed" >> changelog.md
+            echo "--------------" >> changelog.md
+            echo "$NEW_COMMITS" >> changelog.md
+          fi
+
+          echo "✅ Changelog 生成完成"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 检查并删除已存在的 Release 和标签
+        run: |
+          VERSION=${{ needs.get-version.outputs.version }}
+          TAG="v$VERSION"
+
+          echo "🔍 检查标签 $TAG 是否存在"
+
+          # 检查远程标签是否存在
+          if git ls-remote --tags origin | grep -q "refs/tags/$TAG"; then
+            echo "⚠️  标签 $TAG 已存在，准备删除"
+
+            # 删除远程 Release（如果存在）
+            gh release delete $TAG --yes 2>/dev/null || echo "📌 Release 不存在或已删除"
+
+            # 删除远程标签
+            git push --delete origin $TAG 2>/dev/null || echo "📌 远程标签已删除"
+
+            # 删除本地标签（如果存在）
+            git tag -d $TAG 2>/dev/null || true
+
+            echo "✅ 旧版本已清理"
+          else
+            echo "✨ 标签 $TAG 不存在，继续创建新 Release"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 创建 Release 并上传产物
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.get-version.outputs.version }}
+          name: v${{ needs.get-version.outputs.version }}
+          body_path: changelog.md
+          prerelease: ${{ needs.get-version.outputs.is_prerelease }}
+          files: |
+            dist/Smile2Unlock-win/*.exe
+            # dist/Smile2Unlock-linux/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

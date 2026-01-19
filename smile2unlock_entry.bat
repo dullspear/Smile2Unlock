@@ -4,7 +4,7 @@ if "%1"=="show" goto begin
 start mshta vbscript:createobject("wscript.shell").run("%~f0 show",0)(window.close)&&exit
 :begin
 ::执行具体任务
-call activate Smile2Unlock_last
+call activate Smile2Unlock
 @REM conda在bat中使用call
 @REM cd D:/pyproject/Smile2Unlock
 @REM 无论改bat在哪，都不需要指定路径，将会在任务计划中指定
