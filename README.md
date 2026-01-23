@@ -15,8 +15,11 @@
   <a style="text-decoration:none">
     <img src="https://img.shields.io/badge/License-GPLv3-blue?color=#4ec820" alt="GPLv3"/>
     </a>
-    <a style="text-decoration:none">
-    <img src="https://img.shields.io/badge/version-1.0.0-blue?color=#4ec820" alt="v1.0.0"/>
+  <a style="text-decoration:none" href="https://github.com/dullspear/Smile2Unlock/releases">
+    <img src="https://img.shields.io/badge/version-1.0.2--beta-orange"/>
+  </a>
+  <a style="text-decoration:none" href="https://github.com/dullspear/Smile2Unlock/actions/workflows/release.yml">
+    <img src="https://github.com/dullspear/Smile2Unlock/actions/workflows/release.yml/badge.svg"/>
   </a>
 </p>
 
