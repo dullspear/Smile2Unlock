@@ -5,6 +5,10 @@ on:
     branches:
       - main
 
+# 权限配置：允许创建 Release 和推送 Tag
+permissions:
+  contents: write  # 必需：创建 Release、推送 Tag
+
 # 并发控制：防止多次 push 同时执行导致冲突
 concurrency:
   group: release-${{ github.ref }}
