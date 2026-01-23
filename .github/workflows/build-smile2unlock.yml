@@ -1,0 +1,47 @@
+name: Build Smile2Unlock
+
+on:
+  workflow_call:
+    outputs:
+      artifact-name:
+        description: '构建产物名称'
+        value: ${{ jobs.build-windows.outputs.artifact-name }}
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    outputs:
+      artifact-name: Smile2Unlock-win
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 初始化 conda 并创建环境
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          miniforge-version: latest
+          activate-environment: Smile2Unlock
+          python-version: '3.11.9'
+          auto-activate-base: false
+
+      - name: 安装 dlib
+        shell: bash -l {0}
+        run: conda install dlib=19.24.4 -c conda-forge -y
+
+      - name: 安装其他依赖
+        shell: bash -l {0}
+        run: |
+          pip install cmake==3.29.3 face_recognition opencv-contrib-python==4.9.0.80 pynput screeninfo numpy==1.26.4 torch==2.2.2 torchvision==0.17.2 torchaudio==2.2.2
+          pip install pyinstaller
+
+      - name: 打包为Windows可执行文件
+        shell: bash -l {0}
+        run: pyinstaller --clean --noconfirm ./smile2unlock.spec
+
+      - name: 上传 Windows 构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: Smile2Unlock-win
+          path: dist/Smile2Unlock/*.exe
+          retention-days: 7

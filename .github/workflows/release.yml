@@ -1,4 +1,4 @@
-name: Build & Release
+name: Release
 
 on:
   push:
@@ -58,92 +58,12 @@ jobs:
             echo "🧪 预发布版本 (${clean_version##*-})"
           fi
 
-  build-windows:
+  build:
     needs: get-version
-    runs-on: windows-latest
-    steps:
-      - name: 检出代码
-        uses: actions/checkout@v4
-
-      - name: 设置Python环境
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: 初始化 conda
-        uses: conda-incubator/setup-miniconda@v3
-        with:
-          auto-update-conda: true
-          miniforge-version: latest
-          activate-environment: Smile2Unlock
-          python-version: '3.11.9'
-
-      - name: 创建 conda 环境
-        shell: bash
-        run: conda create -n Smile2Unlock python=3.11.9 -y
-
-      - name: 通过 conda 安装 dlib
-        shell: bash
-        run: conda install dlib=19.24.4 -c conda-forge -y
-
-      - name: 通过 pip 安装其他必要库
-        shell: bash
-        run: |
-          conda run -n Smile2Unlock pip install cmake==3.29.3 face_recognition opencv-contrib-python==4.9.0.80 pynput screeninfo numpy==1.26.4 torch==2.2.2 torchvision==0.17.2 torchaudio==2.2.2
-
-      - name: 安装PyInstaller
-        shell: bash
-        run: conda run -n Smile2Unlock pip install pyinstaller
-
-      - name: 打包为Windows可执行文件
-        shell: bash
-        run: conda run -n Smile2Unlock pyinstaller --clean --noconfirm .\\smile2unlock.spec
-
-      - name: 上传 Windows 构建产物
-        uses: actions/upload-artifact@v4
-        with:
-          name: Smile2Unlock-win
-          path: dist\Smile2Unlock\*.exe
-
-#  build-linux:
-#    needs: get-version
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: 检出代码
-#        uses: actions/checkout@v4
-#
-#      - name: 设置Python环境
-#        uses: actions/setup-python@v5
-#        with:
-#          python-version: '3.11'
-#
-#      - name: 安装依赖
-#        run: |
-#          if [ -f pip_requirements.txt ]; then
-#            pip install -r pip_requirements.txt || pip install cmake==3.29.3 face-recognition opencv-contrib-python==4.9.0.80 pynput screeninfo numpy==1.26.4 torch==2.2.2 torchvision==0.17.2 torchaudio==2.2.2
-#          elif [ -f requirements.txt ]; then
-#            pip install -r requirements.txt
-#          else
-#            pip install cmake==3.29.3 face-recognition opencv-contrib-python==4.9.0.80 pynput screeninfo numpy==1.26.4 torch==2.2.2 torchvision==0.17.2 torchaudio==2.2.2
-#          fi
-#
-#      - name: 安装PyInstaller
-#        run: pip install pyinstaller
-#
-#      - name: 打包为Linux可执行文件
-#        run: |
-#          pyinstaller --clean --noconfirm ./smile2unlock.spec
-#          # 确保可执行权限
-#          chmod +x dist/Smile2Unlock/* || true
-#
-#      - name: 上传 Linux 构建产物
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: Smile2Unlock-linux
-#          path: dist/Smile2Unlock/*
+    uses: ./.github/workflows/build-smile2unlock.yml
 
   create-release:
-    needs: [build-windows, get-version]
+    needs: [build, get-version]
     runs-on: ubuntu-latest
     steps:
       - name: 检出代码
@@ -381,8 +301,8 @@ jobs:
           name: v${{ needs.get-version.outputs.version }}
           body_path: changelog.md
           prerelease: ${{ needs.get-version.outputs.is_prerelease }}
+          generate_release_notes: true  # 自动生成 GitHub Changelog
           files: |
             dist/Smile2Unlock-win/*.exe
-            # dist/Smile2Unlock-linux/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
