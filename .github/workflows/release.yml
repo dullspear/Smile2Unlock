@@ -307,6 +307,6 @@ jobs:
           prerelease: ${{ needs.get-version.outputs.is_prerelease }}
           generate_release_notes: true  # 自动生成 GitHub Changelog
           files: |
-            dist/Smile2Unlock-win/*.exe
+            dist/Smile2Unlock-win/Smile2Unlock.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
