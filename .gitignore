@@ -14,6 +14,9 @@
 /requirements.txt
 /.history/
 
+
+# vscode
+/.vscode/
 # Python
 *.pyc
 __pycache__/

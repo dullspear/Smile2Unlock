@@ -63,9 +63,14 @@ conda create -n Smile2Unlock python=3.11.9 -y
 
 2.通过 conda 安装 dlib
 
+```bash
+# 安装 CPU 版本的 dlib，避免 CUDA 错误
+conda install -c conda-forge "dlib=*=*cpu*" -y
 ```
-conda install dlib=19.24.4 -c conda-forge -y
-```
+
+**⚠️ 说明**：
+- 建议安装 **CPU 版本** 的 dlib，否则在无 NVIDIA GPU 的系统上会出现 CUDA 初始化错误
+- 只有此包使用 conda 安装
 
 3.通过 pip 安装其他必要库
 
@@ -79,7 +84,7 @@ pip install cmake==3.29.3 face_recognition opencv-contrib-python==4.9.0.80 pynpu
 ```
 python=3.11.9		创建conda指定版本，推荐该版本
 cmake=3.29.3		最新版皆可，无严格版本限制
-dlib=19.24.4		特殊的，只有此库使用conda安装
+dlib=20.0.0 (CPU版本)	特殊的，只有此库使用conda安装 并且建议使用 "dlib=*=*cpu*" 安装
 face-recognition=1.3.0
 opencv-contrib-python=4.9.0.80
 pynput=1.7.7
