@@ -1,6 +1,10 @@
 import os
 import sys
-from PyInstaller.utils.hooks import collect_data_files
+from PyInstaller.utils.hooks import (
+    collect_data_files,
+    collect_dynamic_libs,
+    collect_submodules,
+)
 
 
 # 在某些情况下（pyinstaller 执行 spec 时）__file__ 可能不存在（例如通过 runpy），使用 cwd/可执行路径作为回退
@@ -19,6 +23,11 @@ pathex = [project_root]
 # 收集 face_recognition_models 包内的数据（如果安装在当前环境中）
 face_models_datas = collect_data_files('face_recognition_models')
 
+# 收集 torch 相关内容（子模块、数据文件、动态库），用于 exe 环境中正常导入
+torch_hiddenimports = collect_submodules('torch')
+torch_datas = collect_data_files('torch')
+torch_binaries = collect_dynamic_libs('torch')
+
 # 如果项目根目录下有 shape_predictor_68_face_landmarks.dat，则加入 datas
 shape_predictor_path = os.path.join(project_root, 'shape_predictor_68_face_landmarks.dat')
 shape_predictor_datas = [(shape_predictor_path, '.') ] if os.path.exists(shape_predictor_path) else []
@@ -35,15 +44,15 @@ if os.path.isdir(resources_dir):
             resources_datas.append((src, rel_root))
 
 # 合并 datas（均为相对/项目内路径）
-datas = face_models_datas + shape_predictor_datas + resources_datas
+datas = face_models_datas + shape_predictor_datas + resources_datas + torch_datas
 
 # ============== generate_db 分析和打包 ==============
 a_generate_db = Analysis(
     ['generate_db.py'],
     pathex=pathex,
-    binaries=[],
+    binaries=torch_binaries,
     datas=datas,
-    hiddenimports=['face_recognition_models'],
+    hiddenimports=['face_recognition_models'] + torch_hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -76,9 +85,9 @@ exe_generate_db = EXE(
 a_smile2unlock = Analysis(
     ['smile2unlock_entry.py'],
     pathex=pathex,
-    binaries=[],
+    binaries=torch_binaries,
     datas=datas,
-    hiddenimports=['face_recognition_models'],
+    hiddenimports=['face_recognition_models'] + torch_hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
