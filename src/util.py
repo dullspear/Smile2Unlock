@@ -12,6 +12,8 @@ def try_disable_dlib_cuda() -> None:
 
     目标：在 AMD / 无 NVIDIA / 驱动不匹配的机器上，避免 dlib 在导入/首次使用时
     触发 CUDA 初始化导致的崩溃。
+
+    注意：如果安装了正确的 CPU 版本 dlib，通常不需要此函数。
     """
 
     try:

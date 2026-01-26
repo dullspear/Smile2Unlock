@@ -25,9 +25,10 @@ jobs:
           python-version: '3.11.9'
           auto-activate-base: false
 
-      - name: 安装 dlib
+      - name: 安装 dlib (CPU 版本)
         shell: bash -l {0}
-        run: conda install dlib=19.24.4 -c conda-forge -y
+        run: conda install -c conda-forge "dlib=*=*cpu*" -y
+        # 重要：使用 CPU 版本的 dlib 避免 CUDA 初始化错误
 
       - name: 安装其他依赖
         shell: bash -l {0}
