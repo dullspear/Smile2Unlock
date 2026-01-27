@@ -16,7 +16,7 @@
     <img src="https://img.shields.io/badge/License-GPLv3-blue?color=#4ec820" alt="GPLv3"/>
     </a>
   <a style="text-decoration:none" href="https://github.com/dullspear/Smile2Unlock/releases">
-    <img src="https://img.shields.io/badge/version-1.0.2--beta-orange"/>
+    <img src="https://img.shields.io/badge/version-1.0.2-blue"/>
   </a>
   <a style="text-decoration:none" href="https://github.com/dullspear/Smile2Unlock/actions/workflows/release.yml">
     <img src="https://github.com/dullspear/Smile2Unlock/actions/workflows/release.yml/badge.svg"/>
@@ -45,70 +45,56 @@
 
 此外，本程序在人脸识别时并不会展示当前人脸，正如上图，您可以根据需求自行修改代码。
 
-### 如何使用
+### 安装
 
-您可以手动git clone本项目，并按以下步骤安装必备库，或直接前往release界面使用已经打包好的exe程序
+#### 方式一: 使用 Release 版本 (推荐)
 
-### 1.安装
+直接前往 [Release](https://github.com/dullspear/Smile2Unlock/releases) 页面下载已经打包好的 exe 程序,解压后即可使用。
 
-由于环境错综复杂，本项目也不提供requirements.txt
+> **安全提示**: Release 版本由 GitHub Actions 自动编译打包,构建过程完全透明可追溯,确保软件安全性。
 
-推荐按照以下步骤使用
+#### 方式二: 从源码手动安装
 
-1.创建 conda 环境
+如果您想从源码运行或进行开发,请按以下步骤操作:
 
-```
-conda create -n Smile2Unlock python=3.11.9 -y
-```
-
-2.通过 conda 安装 dlib
+1. 创建 conda 环境
 
 ```bash
-# 安装 CPU 版本的 dlib，避免 CUDA 错误
-conda install -c conda-forge "dlib=*=*cpu*" -y
+conda create -n Smile2Unlock python=3.11.9 -y
+conda activate Smile2Unlock
 ```
 
-**⚠️ 说明**：
-- 建议安装 **CPU 版本** 的 dlib，否则在无 NVIDIA GPU 的系统上会出现 CUDA 初始化错误
-- 只有此包使用 conda 安装
+2. 通过 conda 安装 dlib (CPU版本,避免CUDA错误)
 
-3.通过 pip 安装其他必要库
-
-```
-pip install cmake==3.29.3 face_recognition opencv-contrib-python==4.9.0.80 pynput screeninfo numpy==1.26.4 torch==2.2.2 torchvision==0.17.2 torchaudio==2.2.2 
-
+```bash
+conda install "dlib=20.0.0=*cpu*" -c conda-forge -y
 ```
 
-总结：该版本测试成功，仅供参考：
+3. 通过 pip 安装其他必要库
 
-```
-python=3.11.9		创建conda指定版本，推荐该版本
-cmake=3.29.3		最新版皆可，无严格版本限制
-dlib=20.0.0 (CPU版本)	特殊的，只有此库使用conda安装 并且建议使用 "dlib=*=*cpu*" 安装
-face-recognition=1.3.0
-opencv-contrib-python=4.9.0.80
-pynput=1.7.7
-screeninfo=0.8.1
-torch=2.2.2
-torchaudio=2.2.2
-torchvision=0.17.2
-numpy=1.26.4
+```bash
+pip install -r requirements.txt
 ```
 
-### 2. 导入自身人脸数据
+> **注意**: 所有依赖的具体版本已固定在 `requirements.txt` 文件中,确保环境可复现。
 
-在进入conda环境后，运行 python generate_db.py 在gui界面录入即可
+---
 
-本流程仅需一次，如改人脸需要删除，在db文件夹下直接删除即可。
+### 使用指南
 
-### 3. 尝试启动
+#### 1. 导入人脸数据
 
-如果您仅需运行程序，使用 python smile2unlock_entry.py
-而如果您想生成本地可执行文件，请自行修改smile2unlock_entry.bat 文件
+- **Release 版本**: 运行 `generate_db.exe` 在 GUI 界面录入人脸
+- **源码运行**: 在 conda 环境中运行 `python generate_db.py`
 
- 可以直接运行，查看效果
+本流程仅需一次,如需更换人脸,直接删除 `db` 文件夹下对应文件即可。
 
-### 4. 加入开机自启
+#### 2. 启动程序
+
+- **Release 版本**: 直接运行 `smile2unlock_entry.exe`
+- **源码运行**: 在 conda 环境中运行 `python smile2unlock_entry.py`
+
+#### 3. 加入开机自启
 
 参考[windows锁屏时启动某个程序（使用win任务计划库）_windows 计划任务 用户登录时运行 锁屏状态执行吗-CSDN博客](https://blog.csdn.net/weixin_45285564/article/details/133299981)
 
@@ -120,7 +106,7 @@ numpy=1.26.4
 
 完成后，您可以在右侧运行中尝试运行。
 
-### 5. 其他
+#### 4. 其他配置
 
 您可以在config.json中启动特殊按键，1为启动（默认），0为关闭，当开启时，你可以按下“分钟的十分位”来强制关闭人脸识别，比如“20:13”可以按数字“1”。
 
@@ -128,11 +114,19 @@ numpy=1.26.4
 
 您可以在config.json中设置透明度，1为完全透明，0为完全不透明，默认0.5
 
-### 6.打包
+---
 
-```
+### 开发者选项
+
+#### 从源码打包可执行文件
+
+如果需要自行打包为可执行文件:
+
+```bash
 pyinstaller --clean --noconfirm .\smile2unlock.spec
 ```
+
+---
 
 ### 项目结构
 
