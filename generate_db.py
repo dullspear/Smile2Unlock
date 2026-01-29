@@ -53,6 +53,10 @@ class App:
 
     def process_webcam(self):
         ret, frame = self.cap.read()
+        
+        if ret:
+            # 去除可能存在的摄像头黑边 (Letterbox)
+            frame = util.remove_black_borders(frame)
 
         self.most_recent_capture_arr = frame
         img_ = cv2.cvtColor(self.most_recent_capture_arr, cv2.COLOR_BGR2RGB)
