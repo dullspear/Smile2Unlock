@@ -5,7 +5,7 @@ from ctypes import windll
 from hook import Hook
 from login import Login
 from logger import log
-
+from src import util
 
 class loginSystem:
     def __init__(self, db_dir):
@@ -30,6 +30,9 @@ class loginSystem:
         if not ret:
             self.lose_count += 1
             return False
+
+        # 去除黑边
+        frame = util.remove_black_borders(frame)
 
         result = self.login.login(frame)
         if result == 0:

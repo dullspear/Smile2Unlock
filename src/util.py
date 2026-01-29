@@ -6,6 +6,38 @@ from tkinter import messagebox
 
 from logger import log
 
+import cv2
+
+
+def remove_black_borders(frame):
+    """
+    移除图像四周的黑边（Letterbox/Pillarbox）。
+    原理：检测非零像素（亮度>1）的最小外接矩形，并在此范围内裁剪。
+    这通常能解决摄像头驱动强制填充黑边的问题。
+    """
+    if frame is None:
+        return frame
+
+    # 转灰度
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+    # 简单的二值化，阈值设为1 (过滤掉纯黑0)
+    # 如果摄像头黑边有噪点，可以适当提高阈值为 5 或 10
+    _, thresh = cv2.threshold(gray, 1, 255, cv2.THRESH_BINARY)
+
+    # 查找非零像素点
+    points = cv2.findNonZero(thresh)
+
+    if points is not None:
+        x, y, w, h = cv2.boundingRect(points)
+
+        # 只有在确实需要裁剪时才操作
+        h_src, w_src = frame.shape[:2]
+        if w < w_src or h < h_src:
+            return frame[y : y + h, x : x + w]
+
+    return frame
+
 
 def try_disable_dlib_cuda() -> None:
     """Best-effort disable CUDA in dlib.
