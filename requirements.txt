@@ -19,3 +19,4 @@ torchaudio==2.2.2
 
 # Build tools (only needed for packaging)
 pyinstaller==6.16.0
+setuptools>=65.0.0
