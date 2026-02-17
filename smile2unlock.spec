@@ -23,10 +23,14 @@ pathex = [project_root]
 # 收集 face_recognition_models 包内的数据（如果安装在当前环境中）
 face_models_datas = collect_data_files('face_recognition_models')
 
-# 收集 torch 相关内容（子模块、数据文件、动态库），用于 exe 环境中正常导入
+# torch
 torch_hiddenimports = collect_submodules('torch')
-torch_datas = collect_data_files('torch')
+torch_datas = []
 torch_binaries = collect_dynamic_libs('torch')
+
+torch_excludes = [] 
+
+common_hiddenimports = collect_submodules('pkg_resources') + collect_submodules('packaging')
 
 # 如果项目根目录下有 shape_predictor_68_face_landmarks.dat，则加入 datas
 shape_predictor_path = os.path.join(project_root, 'shape_predictor_68_face_landmarks.dat')
@@ -52,7 +56,7 @@ a_generate_db = Analysis(
     pathex=pathex,
     binaries=torch_binaries,
     datas=datas,
-    hiddenimports=['face_recognition_models'] + torch_hiddenimports,
+    hiddenimports=['face_recognition_models'] + torch_hiddenimports + common_hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -87,7 +91,7 @@ a_smile2unlock = Analysis(
     pathex=pathex,
     binaries=torch_binaries,
     datas=datas,
-    hiddenimports=['face_recognition_models'] + torch_hiddenimports,
+    hiddenimports=['face_recognition_models'] + torch_hiddenimports + common_hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
