@@ -28,8 +28,6 @@ torch_hiddenimports = collect_submodules('torch')
 torch_datas = []
 torch_binaries = collect_dynamic_libs('torch')
 
-torch_excludes = [] 
-
 common_hiddenimports = collect_submodules('pkg_resources') + collect_submodules('packaging')
 
 # 如果项目根目录下有 shape_predictor_68_face_landmarks.dat，则加入 datas
