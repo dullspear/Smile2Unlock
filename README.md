@@ -13,10 +13,10 @@
     <img src="https://img.shields.io/badge/Platform-Win-blue?color=#4ec820" alt="Platform Win"/>
   </a>
   <a style="text-decoration:none">
-    <img src="https://img.shields.io/badge/License-GPLv3-blue?color=#4ec820" alt="GPLv3"/>
+    <img src="https://img.shields.io/badge/License-Apache--2.0-blue?color=#4ec820" alt="Apache-2.0"/>
     </a>
   <a style="text-decoration:none" href="https://github.com/dullspear/Smile2Unlock/releases">
-    <img src="https://img.shields.io/badge/version-1.0.3--beta-orange"/>
+    <img src="https://img.shields.io/badge/version-1.0.3-blue"/>
   </a>
   <a style="text-decoration:none" href="https://github.com/dullspear/Smile2Unlock/actions/workflows/release.yml">
     <img src="https://github.com/dullspear/Smile2Unlock/actions/workflows/release.yml/badge.svg"/>
@@ -98,11 +98,11 @@ pip install -r requirements.txt
 
 参考[windows锁屏时启动某个程序（使用win任务计划库）_windows 计划任务 用户登录时运行 锁屏状态执行吗-CSDN博客](https://blog.csdn.net/weixin_45285564/article/details/133299981)
 
-<img width="3346" height="1880" alt="202406102010831" src="https://github.com/user-attachments/assets/62302c14-1895-401c-b462-5d9e1ac92bc2" />
+![202406102010831](https://github.com/user-attachments/assets/62302c14-1895-401c-b462-5d9e1ac92bc2)
 
 值得注意的是 请务必指定bat文件夹路径（在“起始于”中填写文件夹）
 
-<img width="788" height="869" alt="202406102005548" src="https://github.com/user-attachments/assets/2112605c-8d81-4fc5-ba32-aae7b56b3fb5" />
+![202406102005548](https://github.com/user-attachments/assets/2112605c-8d81-4fc5-ba32-aae7b56b3fb5)
 
 完成后，您可以在右侧运行中尝试运行。
 
