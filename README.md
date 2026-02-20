@@ -146,11 +146,13 @@ pyinstaller --clean --noconfirm .\smile2unlock.spec
 
 ### 流程图
 
-1.generate_db.py
-`<img width="458" height="655" alt="202406102023562" src="https://github.com/user-attachments/assets/482650f0-8b26-402c-849a-c199e970a405" />`
+#### 1. generate_db.py
 
-2.smile2unlock_entry.py
-`<img width="1571" height="2257" alt="202406102024455" src="https://github.com/user-attachments/assets/cfe6ca65-2ba5-4f6c-acf5-773d4c554767" />`
+![202406102023562](https://github.com/user-attachments/assets/482650f0-8b26-402c-849a-c199e970a405)
+
+#### 2. smile2unlock_entry.py
+
+![202406102024455](https://github.com/user-attachments/assets/cfe6ca65-2ba5-4f6c-acf5-773d4c554767)
 
 ### 参考
 
