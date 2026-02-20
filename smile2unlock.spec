@@ -28,7 +28,11 @@ torch_hiddenimports = collect_submodules('torch')
 torch_datas = []
 torch_binaries = collect_dynamic_libs('torch')
 
-common_hiddenimports = collect_submodules('pkg_resources') + collect_submodules('packaging')
+# Fix: setuptools._vendor.jaraco.context 需要 backports.tarfile
+# 这是 PyInstaller runtime hook (pyi_rth_pkgres.py) 启动时的隐式依赖
+common_hiddenimports = [
+    'backports.tarfile',
+]
 
 # 如果项目根目录下有 shape_predictor_68_face_landmarks.dat，则加入 datas
 shape_predictor_path = os.path.join(project_root, 'shape_predictor_68_face_landmarks.dat')
