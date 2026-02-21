@@ -20,7 +20,6 @@ from src.model_lib.MiniFASNet import (
     MiniFASNetV1SE,
     MiniFASNetV2SE,
 )
-from src.data_io import transform as trans
 from src.utility import get_kernel, parse_model_name, resource_path
 import torch
 
@@ -113,12 +112,8 @@ class AntiSpoofPredict(Detection):
         return None
 
     def predict(self, img, model_path):
-        test_transform = trans.Compose(
-            [
-                trans.ToTensor(),
-            ]
-        )
-        img = test_transform(img)
+        # 将 numpy 图像转换为 tensor (替代原 transform.ToTensor)
+        img = torch.from_numpy(img.transpose((2, 0, 1))).float()
         img = img.unsqueeze(0).to(self.device)
         self._load_model(model_path)
         self.model.eval()
