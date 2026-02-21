@@ -1,27 +1,29 @@
-# -*- coding: utf-8 -*-
 # @Time : 20-6-9 上午10:20
 # @Author : zhuying
 # @Company : Minivision
 # @File : anti_spoof_predict.py
 # @Software : PyCharm
 
+import math
 import os
 
 import cv2
-import math
-
 import numpy as np
+import torch
 import torch.nn.functional as F
 
-
-from src.model_lib.MiniFASNet import (
+from src.Silent_Face_Anti_Spoofing.model_lib.MiniFASNet import (
     MiniFASNetV1,
-    MiniFASNetV2,
     MiniFASNetV1SE,
+    MiniFASNetV2,
     MiniFASNetV2SE,
 )
-from src.utility import get_kernel, parse_model_name, resource_path
-import torch
+from src.Silent_Face_Anti_Spoofing.utility import (
+    get_kernel,
+    parse_model_name,
+    resource_path,
+)
+
 
 MODEL_MAPPING = {
     "MiniFASNetV1": MiniFASNetV1,
@@ -34,9 +36,7 @@ MODEL_MAPPING = {
 class Detection:
     def __init__(self):
         # 使用 resource_path 确保在打包后也能正确找到资源
-        caffemodel = resource_path(
-            "resources", "detection_model", "Widerface-RetinaFace.caffemodel"
-        )
+        caffemodel = resource_path("resources", "detection_model", "Widerface-RetinaFace.caffemodel")
         deploy = resource_path("resources", "detection_model", "deploy.prototxt")
 
         # 强制使用 CPU 后端，避免对 cudnn/cuda dll 的依赖（如需 GPU，可移除以下两行并在 spec 加入对应 dll）
@@ -79,9 +79,7 @@ class Detection:
 class AntiSpoofPredict(Detection):
     def __init__(self, device_id):
         super(AntiSpoofPredict, self).__init__()
-        self.device = torch.device(
-            "cuda:{}".format(device_id) if torch.cuda.is_available() else "cpu"
-        )
+        self.device = torch.device(f"cuda:{device_id}" if torch.cuda.is_available() else "cpu")
 
     def _load_model(self, model_path):
         # define model
@@ -91,9 +89,7 @@ class AntiSpoofPredict(Detection):
             h_input,
             w_input,
         )
-        self.model = MODEL_MAPPING[model_type](conv6_kernel=self.kernel_size).to(
-            self.device
-        )
+        self.model = MODEL_MAPPING[model_type](conv6_kernel=self.kernel_size).to(self.device)
 
         # load model weight
         state_dict = torch.load(model_path, map_location=self.device)

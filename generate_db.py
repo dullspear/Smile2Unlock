@@ -1,16 +1,15 @@
-import os.path
 import datetime
+import os.path
 import pickle
-
 import tkinter as tk
+
 import cv2
 from PIL import Image, ImageTk
 
-
 from src import util
-from src.fake_face_test import test
-from src.utility import resource_path
-from logger import log
+from src.logger import log
+from src.Silent_Face_Anti_Spoofing.fake_face_test import test
+from src.Silent_Face_Anti_Spoofing.utility import resource_path
 
 
 class App:
@@ -18,14 +17,10 @@ class App:
         self.main_window = tk.Tk()
         self.main_window.geometry("1200x520+350+100")
 
-        self.login_button_main_window = util.get_button(
-            self.main_window, "测试", "green", self.login
-        )
+        self.login_button_main_window = util.get_button(self.main_window, "测试", "green", self.login)
         self.login_button_main_window.place(x=750, y=300)
 
-        self.logout_button_main_window = util.get_button(
-            self.main_window, "logout", "red", self.logout
-        )
+        self.logout_button_main_window = util.get_button(self.main_window, "logout", "red", self.logout)
         # self.logout_button_main_window.place(x=750, y=300)
 
         self.register_new_user_button_main_window = util.get_button(
@@ -53,7 +48,7 @@ class App:
 
     def process_webcam(self):
         ret, frame = self.cap.read()
-        
+
         if ret:
             # 去除可能存在的摄像头黑边 (Letterbox)
             frame = util.remove_black_borders(frame)
@@ -77,13 +72,11 @@ class App:
             name = util.recognize(self.most_recent_capture_arr, self.db_dir)
 
             if name in ["unknown_person", "no_persons_found"]:
-                util.msg_box(
-                    "Ups...", "Unknown user. Please register new user or try again."
-                )
+                util.msg_box("Ups...", "Unknown user. Please register new user or try again.")
             else:
-                util.msg_box("Welcome back !", "Welcome, {}.".format(name))
+                util.msg_box("Welcome back !", f"Welcome, {name}.")
                 with open(self.log_path, "a") as f:
-                    f.write("{},{},in\n".format(name, datetime.datetime.now()))
+                    f.write(f"{name},{datetime.datetime.now()},in\n")
                     f.close()
 
         else:
@@ -99,13 +92,11 @@ class App:
             name = util.recognize(self.most_recent_capture_arr, self.db_dir)
 
             if name in ["unknown_person", "no_persons_found"]:
-                util.msg_box(
-                    "Ups...", "Unknown user. Please register new user or try again."
-                )
+                util.msg_box("Ups...", "Unknown user. Please register new user or try again.")
             else:
-                util.msg_box("Hasta la vista !", "Goodbye, {}.".format(name))
+                util.msg_box("Hasta la vista !", f"Goodbye, {name}.")
                 with open(self.log_path, "a") as f:
-                    f.write("{},{},out\n".format(name, datetime.datetime.now()))
+                    f.write(f"{name},{datetime.datetime.now()},out\n")
                     f.close()
 
         else:
@@ -136,9 +127,7 @@ class App:
 
         self.add_img_to_label(self.capture_label)
 
-        self.entry_text_register_new_user = util.get_entry_text(
-            self.register_new_user_window
-        )
+        self.entry_text_register_new_user = util.get_entry_text(self.register_new_user_window)
         self.entry_text_register_new_user.place(x=750, y=150)
 
         self.text_label_register_new_user = util.get_text_label(
@@ -163,9 +152,7 @@ class App:
         name = self.entry_text_register_new_user.get(1.0, "end-1c")
         try:
             face_recognition = util.safe_import_face_recognition()
-            embeddings_list = face_recognition.face_encodings(
-                self.register_new_user_capture
-            )
+            embeddings_list = face_recognition.face_encodings(self.register_new_user_capture)
             embeddings = embeddings_list[0]
 
         except RuntimeError as e:
@@ -175,7 +162,7 @@ class App:
                 util.msg_box(
                     "Error",
                     "检测到 dlib/face_recognition 触发了 CUDA 初始化失败。\n"
-                    "请确认你安装的是 CPU 版 dlib（conda-forge 的 dlib 一般是 CPU 构建），或更新/匹配 CUDA/驱动环境。\n\n"
+                    "请确认你安装的是 CPU 版 dlib（conda-forge 的 dlib 一般是 CPU 构建），或更新/匹配 CUDA/驱动环境。\n"
                     f"详细信息: {e}",
                 )
                 return
@@ -186,7 +173,7 @@ class App:
             util.msg_box("Error", "No face found.")
             return
 
-        file = open(os.path.join(self.db_dir, "{}.pickle".format(name)), "wb")
+        file = open(os.path.join(self.db_dir, f"{name}.pickle"), "wb")
         pickle.dump(embeddings, file)
 
         util.msg_box("Success!", "User was registered successfully !")

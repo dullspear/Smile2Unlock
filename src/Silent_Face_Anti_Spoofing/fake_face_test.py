@@ -1,23 +1,20 @@
-# -*- coding: utf-8 -*-
 # @Time : 20-6-9 下午3:06
 # @Author : zhuying
 # @Company : Minivision
 # @File : fake_face_test.py
 # @Software : PyCharm
-import sys
+import argparse
 import os
-from src.utility import resource_path, output_dir
+import time
+import warnings
 
-import os
 import cv2
 import numpy as np
-import argparse
-import warnings
-import time
 
-from src.anti_spoof_predict import AntiSpoofPredict
-from src.generate_patches import CropImage
-from src.utility import parse_model_name
+from src.Silent_Face_Anti_Spoofing.anti_spoof_predict import AntiSpoofPredict
+from src.Silent_Face_Anti_Spoofing.generate_patches import CropImage
+from src.Silent_Face_Anti_Spoofing.utility import parse_model_name, resource_path
+
 
 warnings.filterwarnings("ignore")
 
@@ -74,23 +71,15 @@ def test(image, model_dir, device_id):
 if __name__ == "__main__":
     desc = "test"
     parser = argparse.ArgumentParser(description=desc)
-    parser.add_argument(
-        "--device_id", type=int, default=0, help="which gpu id, [0/1/2/3]"
-    )
+    parser.add_argument("--device_id", type=int, default=0, help="which gpu id, [0/1/2/3]")
     parser.add_argument(
         "--model_dir",
         type=str,
         default=None,
         help="model_lib used to test (default: bundled resources/anti_spoof_models)",
     )
-    parser.add_argument(
-        "--image_name", type=str, default="image_F1.jpg", help="image used to test"
-    )
+    parser.add_argument("--image_name", type=str, default="image_F1.jpg", help="image used to test")
     args = parser.parse_args()
     # 运行时默认使用打包后的 resources 目录下模型，如果提供了 --model_dir 则使用该路径
-    model_dir = (
-        args.model_dir
-        if args.model_dir
-        else resource_path("resources", "anti_spoof_models")
-    )
+    model_dir = args.model_dir if args.model_dir else resource_path("resources", "anti_spoof_models")
     test(args.image_name, model_dir, args.device_id)

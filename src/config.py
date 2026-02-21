@@ -1,11 +1,10 @@
 import json
 import os
 
-CONFIG_FILE = 'config.json'
-DEFAULT_CONFIG = {
-    "special_key" : 1,
-    "transparency" : 0.5
-}
+
+CONFIG_FILE = "config.json"
+DEFAULT_CONFIG = {"special_key": 1, "transparency": 0.5}
+
 
 def load_config(file_path):
     if not os.path.exists(file_path):
@@ -15,7 +14,7 @@ def load_config(file_path):
         return DEFAULT_CONFIG
     else:
         # Load the existing config file
-        with open(file_path, "r") as f:
+        with open(file_path) as f:
             print("config_info")
             return json.load(f)
 

@@ -1,12 +1,11 @@
 import os
 import pickle
-
 import tkinter as tk
 from tkinter import messagebox
 
-from logger import log
-
 import cv2
+
+from src.logger import log
 
 
 def remove_black_borders(frame):
@@ -160,9 +159,7 @@ def recognize(img, db_path):
         file = open(path_, "rb")
         embeddings = pickle.load(file)
 
-        match = face_recognition.compare_faces(
-            [embeddings], embeddings_unknown, tolerance=0.5
-        )[0]
+        match = face_recognition.compare_faces([embeddings], embeddings_unknown, tolerance=0.5)[0]
         j += 1
 
     if match:

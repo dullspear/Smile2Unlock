@@ -6,9 +6,11 @@
 import sys
 from datetime import datetime
 from tkinter import Tk
+
 from pynput import keyboard
 from screeninfo import get_monitors
-import config
+
+import src.config as config
 
 
 class Hook:
