@@ -80,93 +80,41 @@ jobs:
         with:
           path: dist
 
-      - name: 生成 Changelog
-        id: changelog
+      - name: 清理同版本的预发布版本（正式版发布时）
         run: |
           VERSION=${{ needs.get-version.outputs.version }}
-          TAG="v$VERSION"
           BASE_VERSION=$(echo "$VERSION" | sed 's/-.*$//')
+          IS_PRERELEASE=${{ needs.get-version.outputs.is_prerelease }}
 
-          echo "📦 完整版本: $VERSION"
-          echo "📦 基础版本: $BASE_VERSION"
+          echo "📦 当前版本: $VERSION (基础版本: $BASE_VERSION)"
+          echo "� 是否为预发布: $IS_PRERELEASE"
 
-          # 1. 先保存当前 tag 的旧内容（删除前）
-          echo "🔍 检查 $TAG 是否已存在..."
-          OLD_BODY=$(gh release view $TAG --json body -q .body 2>/dev/null || echo "")
-
-          # 2. 尝试从同版本的其他 Release 获取头部和变更（如 v2.0.3-beta 获取 v2.0.3 的内容）
-          INHERITED_HEADER=""
-          INHERITED_CHANGES=""
-          if [ -z "$OLD_BODY" ]; then
-            echo "🔍 查找同版本 (v$BASE_VERSION*) 的其他 Release..."
-            # 获取同版本的所有 Release
-            SAME_VERSION_RELEASES=$(gh release list --limit 50 | grep "^v$BASE_VERSION" | head -n 1 | awk '{print $1}')
-
-            if [ -n "$SAME_VERSION_RELEASES" ] && [ "$SAME_VERSION_RELEASES" != "$TAG" ]; then
-              echo "📝 发现同版本 Release: $SAME_VERSION_RELEASES"
-              RELATED_BODY=$(gh release view "$SAME_VERSION_RELEASES" --json body -q .body 2>/dev/null || echo "")
-              if [ -n "$RELATED_BODY" ]; then
-                # 提取头部内容（What's Changed 之前）
-                INHERITED_HEADER=$(echo "$RELATED_BODY" | sed -n '1,/## What'\''s Changed/p' | sed '$d')
-                # 提取 What's Changed 中的条目（只取 "- " 开头，避免分隔线重复）
-                INHERITED_CHANGES=$(echo "$RELATED_BODY" | awk '/^## What\x27s Changed/{flag=1;next}/^## /{flag=0}flag && /^- /{print}')
-              fi
-            fi
-          fi
-
-          # 3. 生成新的提交记录
-          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-
-          if [ -z "$PREV_TAG" ]; then
-            echo "📝 首次发布，生成完整历史"
-            NEW_COMMITS=$(git log --pretty=format:"- %s by @%an (%ad)" --date=format:'%b %d, %I:%M %p GMT%z' --no-merges | sed 's/GMT+/GMT+/;s/GMT-/GMT-/')
-          else
-            echo "📝 生成从 $PREV_TAG 到当前的更新日志"
-            NEW_COMMITS=$(git log $PREV_TAG..HEAD --pretty=format:"- %s by @%an (%ad)" --date=format:'%b %d, %I:%M %p GMT%z' --no-merges | sed 's/GMT+/GMT+/;s/GMT-/GMT-/')
-          fi
-
-          # 4. 构建最终的 Changelog
-          > changelog.md  # 清空文件
-
-          if [ -n "$OLD_BODY" ]; then
-            echo "📋 保留当前 tag 的旧内容"
-            # 提取头部
-            HEADER=$(echo "$OLD_BODY" | sed -n '1,/## What'\''s Changed/p' | sed '$d')
-            # 提取旧的变更记录（只要以 "- " 开头，避免分隔线重复）
-            OLD_CHANGES=$(echo "$OLD_BODY" | awk '/^## What\x27s Changed/{flag=1;next}/^## /{flag=0}flag && /^- /{print}')
-
-            if [ -n "$HEADER" ]; then
-              echo "$HEADER" >> changelog.md
-              echo "" >> changelog.md
-            fi
-
-            echo "## What's Changed" >> changelog.md
-            echo "--------------" >> changelog.md
-            echo "$NEW_COMMITS" >> changelog.md
-
-            if [ -n "$OLD_CHANGES" ]; then
-              echo "$OLD_CHANGES" >> changelog.md
-            fi
-          elif [ -n "$INHERITED_HEADER" ]; then
-            echo "📝 继承同版本 Release 的完整内容"
-            echo "$INHERITED_HEADER" >> changelog.md
-            echo "" >> changelog.md
-            echo "## What's Changed" >> changelog.md
-            echo "--------------" >> changelog.md
-            echo "$NEW_COMMITS" >> changelog.md
-
-            if [ -n "$INHERITED_CHANGES" ]; then
-              echo "📋 追加继承的旧变更记录"
-              echo "$INHERITED_CHANGES" >> changelog.md
+          # 如果当前是正式版，删除所有同版本的预发布版本
+          if [ "$IS_PRERELEASE" = "false" ]; then
+            echo "🔍 检查同版本的预发布版本..."
+            
+            # 查找同版本的预发布版本（如 v1.0.3-beta, v1.0.3-alpha 等）
+            SAME_VERSION_PRERELEASES=$(gh release list --limit 100 | grep "Pre-release" | awk '{print $1}' | grep "^v$BASE_VERSION-")
+            
+            if [ -n "$SAME_VERSION_PRERELEASES" ]; then
+              echo "�️  发现同版本预发布版本，准备删除:"
+              echo "$SAME_VERSION_PRERELEASES"
+              
+              # 逐个删除
+              echo "$SAME_VERSION_PRERELEASES" | while read -r PRERELEASE_TAG; do
+                echo "🗑️  删除 $PRERELEASE_TAG..."
+                gh release delete "$PRERELEASE_TAG" --yes 2>/dev/null || echo "⚠️  Release 删除失败"
+                git push --delete origin "$PRERELEASE_TAG" 2>/dev/null || echo "⚠️  Tag 删除失败"
+                git tag -d "$PRERELEASE_TAG" 2>/dev/null || true
+              done
+              
+              echo "✅ 同版本预发布版本已清理"
+            else
+              echo "ℹ️  未找到同版本预发布版本"
             fi
           else
-            echo "✨ 创建全新 Release"
-            echo "## What's Changed" >> changelog.md
-            echo "--------------" >> changelog.md
-            echo "$NEW_COMMITS" >> changelog.md
+            echo "ℹ️  当前版本为预发布版，跳过清理"
           fi
-
-          echo "✅ Changelog 生成完成"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -210,11 +158,7 @@ jobs:
                 if gh release download "$PREV_PRERELEASE" --dir old-artifacts/ 2>/dev/null; then
                   echo "✅ 产物下载成功"
                   
-                  # 3. 保存旧版本的 changelog
-                  echo "📋 保存旧版本 changelog..."
-                  OLD_CHANGELOG=$(gh release view "$PREV_PRERELEASE" --json body -q .body 2>/dev/null || echo "")
-                  
-                  # 4. 获取旧版本指向的 commit
+                  # 3. 获取旧版本指向的 commit
                   echo "🔍 获取旧版本 commit..."
                   PREV_COMMIT=$(git rev-list -n 1 "$PREV_PRERELEASE" 2>/dev/null || echo "")
                   
@@ -223,30 +167,24 @@ jobs:
                     PREV_COMMIT="HEAD~1"
                   fi
                   
-                  # 5. 删除旧版本 release 和 tag
+                  # 4. 删除旧版本 release 和 tag
                   echo "🗑️  删除旧版本 release 和 tag..."
                   gh release delete "$PREV_PRERELEASE" --yes 2>/dev/null || echo "⚠️  Release 删除失败或不存在"
                   git push --delete origin "$PREV_PRERELEASE" 2>/dev/null || echo "⚠️  Tag 删除失败或不存在"
                   git tag -d "$PREV_PRERELEASE" 2>/dev/null || true
                   
-                  # 6. 创建新的正式版 tag
+                  # 5. 创建新的正式版 tag
                   NEW_STABLE_TAG="v$PREV_BASE"
                   echo "🏷️  创建新正式版 tag: $NEW_STABLE_TAG"
                   git tag "$NEW_STABLE_TAG" "$PREV_COMMIT"
                   git push origin "$NEW_STABLE_TAG"
                   
-                  # 7. 创建新的正式版 release
+                  # 6. 创建新的正式版 release（使用 GitHub 自动生成 changelog）
                   echo "🎊 创建正式版 release: $NEW_STABLE_TAG"
-                  
-                  # 在 changelog 前加上转正说明
-                  PROMOTED_NOTE="## 📢 版本说明\n\n本版本由 \`$PREV_PRERELEASE\` 自动转为正式版。\n\n---\n\n"
-                  FINAL_CHANGELOG=$(printf "%b%s" "$PROMOTED_NOTE" "$OLD_CHANGELOG")
-                  
-                  # 上传产物并创建 release
-                  echo "$FINAL_CHANGELOG" > promoted-changelog.md
                   gh release create "$NEW_STABLE_TAG" \
                     --title "v$PREV_BASE" \
-                    --notes-file promoted-changelog.md \
+                    --notes "本版本由 \`$PREV_PRERELEASE\` 自动转为正式版。" \
+                    --generate-notes \
                     old-artifacts/*
                   
                   echo "✅ 成功将 $PREV_PRERELEASE 转为正式版 $NEW_STABLE_TAG"
@@ -303,9 +241,8 @@ jobs:
         with:
           tag_name: v${{ needs.get-version.outputs.version }}
           name: v${{ needs.get-version.outputs.version }}
-          body_path: changelog.md
           prerelease: ${{ needs.get-version.outputs.is_prerelease }}
-          generate_release_notes: true  # 自动生成 GitHub Changelog
+          generate_release_notes: true  # 使用 GitHub 自动生成 Changelog
           files: |
             dist/Smile2Unlock-win/Smile2Unlock.zip
         env:
