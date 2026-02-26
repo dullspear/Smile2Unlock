@@ -1,13 +1,16 @@
-import cv2
-import time
 import threading
+import time
 from ctypes import windll
-from hook import Hook
-from login import Login
-from logger import log
-from src import util
 
-class loginSystem:
+import cv2
+
+from src import util
+from src.hook import Hook
+from src.logger import log
+from src.login import Login
+
+
+class LoginSystem:
     def __init__(self, db_dir):
         log.info("smile2unlock_entry")
         self.db_dir = db_dir
@@ -54,7 +57,7 @@ class loginSystem:
                 log.info("success_count>=1,try to kill hook")
                 try:
                     self.hook.kill_program()
-                except:
+                except Exception:
                     pass
                 log.info("fail")
                 print("ok")
@@ -65,7 +68,7 @@ class loginSystem:
             if self.lose_count >= 120:
                 try:
                     self.hook.kill_program()
-                except:
+                except Exception:
                     print("lose, but hook killed failed")
                     pass
                 self.lock_screen()
@@ -77,5 +80,5 @@ class loginSystem:
 
 if __name__ == "__main__":
     db_dir = "./db"
-    frs = loginSystem(db_dir)
+    frs = LoginSystem(db_dir)
     frs.start()

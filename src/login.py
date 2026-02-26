@@ -1,8 +1,7 @@
 import datetime
 
-from logger import log
-
 from src import util
+from src.logger import log
 from src.Silent_Face_Anti_Spoofing.fake_face_test import test
 from src.Silent_Face_Anti_Spoofing.utility import resource_path
 

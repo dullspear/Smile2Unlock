@@ -131,18 +131,20 @@ pyinstaller --clean --noconfirm .\smile2unlock.spec
 ### 项目结构
 
     |----config.json			配置json，自动生成
-    |----config.py				配置程序
     |----db\					人脸数据库
-    |----smile2unlock_entry.bat			最后导入计划库的可执行程序
-    |----smile2unlock_entry.py			检测程序，项目核心程序  程序入口！！！
-    |----generate_db.py		录入程序，项目核心程序
-    |----hook.py				使用tk生成透明白布，并禁用键鼠
+    |----generate_db.py			录入程序，项目核心程序
     |----log\ 					日志文件
-    |----logger.py				生成日志程序
-    |----login.py				登录程序
-    |----README.md			README
-    |----resources\			第三方人脸识别资源文件
-    |----src\					第三方人脸识别资源文件
+    |----README.md				README
+    |----resources\				第三方人脸识别资源文件
+    |----smile2unlock_entry.bat		最后导入计划库的可执行程序
+    |----smile2unlock_entry.py		检测程序，项目核心程序  程序入口！！！
+    |----src\					源码目录
+         |----config.py				配置程序
+         |----hook.py				使用tk生成透明白布，并禁用键鼠
+         |----logger.py				生成日志程序
+         |----login.py				登录程序
+         |----util.py				工具函数
+         |----Silent_Face_Anti_Spoofing\	第三方活体检测模块
 
 ### 流程图
 

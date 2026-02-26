@@ -1,12 +1,11 @@
-# -*- coding: utf-8 -*-
 # @Time : 20-6-4 下午2:13
 # @Author : zhuying
 # @Company : Minivision
 # @File : utility.py
 # @Software : PyCharm
 
-from datetime import datetime
 import os
+from datetime import datetime
 
 
 def get_time():
